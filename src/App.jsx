@@ -135,26 +135,28 @@ const CSS = () => (
       flex-shrink: 0;
     }
     .side-logo {
-      width: 30px; height: 30px;
+      width: 32px; height: 32px;
       background: var(--accent);
       border-radius: var(--r-sm);
       display: flex; align-items: center; justify-content: center;
-      font-size: 15px;
+      font-size: 16px;
       flex-shrink: 0;
-      box-shadow: 0 2px 8px var(--accent-glow);
+      box-shadow: 0 2px 10px var(--accent-glow);
+      flex-shrink: 0;
     }
     .side-brand-text .name {
-      font-size: 13.5px;
-      font-weight: 600;
+      font-size: 13px;
+      font-weight: 700;
       color: var(--text-primary);
       line-height: 1.2;
-      letter-spacing: -0.01em;
+      letter-spacing: -0.02em;
     }
     .side-brand-text .version {
-      font-size: 10px;
-      color: var(--text-muted);
+      font-size: 9.5px;
+      color: var(--accent);
       font-family: 'Geist Mono', monospace;
-      margin-top: 1px;
+      margin-top: 2px;
+      letter-spacing: 0.04em;
     }
 
     .side-nav {
@@ -201,6 +203,8 @@ const CSS = () => (
       background: var(--accent-dim);
       color: var(--accent);
       font-weight: 600;
+      border-left: 2px solid var(--accent);
+      padding-left: 7px;
     }
     .nav-link .nav-icon {
       font-size: 14px;
@@ -502,12 +506,12 @@ const CSS = () => (
       transform: translateY(-1px);
     }
     .stat-card .stat-label {
-      font-size: 11.5px;
-      font-weight: 500;
+      font-size: 11px;
+      font-weight: 600;
       color: var(--text-muted);
       text-transform: uppercase;
-      letter-spacing: 0.06em;
-      margin-bottom: 10px;
+      letter-spacing: 0.08em;
+      margin-bottom: 12px;
     }
     .stat-card .stat-value {
       font-family: 'Geist Mono', monospace;
@@ -594,18 +598,24 @@ const CSS = () => (
 
     /* ── AVATARS ─────────────────────────────────────────── */
     .avatar {
-      width: 30px; height: 30px;
-      border-radius: var(--r-xs);
+      width: 32px; height: 32px;
+      border-radius: var(--r-sm);
       display: flex; align-items: center; justify-content: center;
       font-family: 'Geist Mono', monospace;
       font-size: 11px;
       font-weight: 600;
       flex-shrink: 0;
+      overflow: hidden;
+      text-overflow: clip;
+      white-space: nowrap;
+      line-height: 1;
+      letter-spacing: -0.02em;
     }
     .avatar-lg {
-      width: 40px; height: 40px;
-      border-radius: var(--r-sm);
-      font-size: 14px;
+      width: 42px; height: 42px;
+      border-radius: var(--r-md);
+      font-size: 13px;
+      overflow: hidden;
     }
     .av-orange { background: rgba(241,130,66,.15); color: var(--accent); }
     .av-blue   { background: rgba(75,158,245,.15); color: var(--blue); }
@@ -618,11 +628,12 @@ const CSS = () => (
       display: inline-flex;
       align-items: center;
       gap: 5px;
-      padding: 2px 8px;
+      padding: 3px 9px;
       border-radius: 99px;
-      font-size: 11.5px;
-      font-weight: 500;
+      font-size: 11px;
+      font-weight: 600;
       white-space: nowrap;
+      letter-spacing: 0.01em;
     }
     .badge::before {
       content: '';
@@ -639,7 +650,7 @@ const CSS = () => (
     .badge-purple { background: var(--purple-dim); color: var(--purple); }
 
     /* ── PROGRESS ────────────────────────────────────────── */
-    .progress { height: 4px; background: var(--bg-muted); border-radius: 99px; overflow: hidden; }
+    .progress { height: 5px; background: var(--bg-muted); border-radius: 99px; overflow: hidden; }
     .progress-fill { height: 100%; border-radius: 99px; transition: width .5s ease; }
     .pf-orange { background: var(--accent); }
     .pf-green  { background: var(--green); }
@@ -779,7 +790,7 @@ const CSS = () => (
       border-color: var(--border-focus);
       transform: translateY(-1px);
     }
-    .monitor-head { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 16px; }
+    .monitor-head { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 18px; overflow: hidden; }
     .monitor-name { font-size: 14.5px; font-weight: 600; letter-spacing: -0.02em; }
     .monitor-role { font-size: 12px; color: var(--accent); margin-top: 2px; }
     .stars { color: var(--amber); font-size: 11px; letter-spacing: 2px; margin-top: 4px; }
@@ -792,10 +803,10 @@ const CSS = () => (
     }
     .meta-key { color: var(--text-muted); }
     .meta-val { color: var(--text-secondary); text-align: right; font-family: 'Geist Mono', monospace; font-size: 11.5px; }
-    .monitor-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
-    .mstat { text-align: center; background: var(--bg-muted); border-radius: var(--r-sm); padding: 10px 6px; }
-    .mstat-v { font-family: 'Geist Mono', monospace; font-size: 17px; font-weight: 600; }
-    .mstat-l { font-size: 10px; color: var(--text-muted); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .monitor-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-top: 4px; }
+    .mstat { text-align: center; background: var(--bg-muted); border-radius: var(--r-sm); padding: 12px 8px; }
+    .mstat-v { font-family: 'Geist Mono', monospace; font-size: 18px; font-weight: 600; letter-spacing: -0.03em; }
+    .mstat-l { font-size: 9.5px; color: var(--text-muted); margin-top: 3px; text-transform: uppercase; letter-spacing: 0.06em; }
 
     /* ── VEHICLE CARD ────────────────────────────────────── */
     .vehicle-card {

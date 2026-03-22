@@ -101,28 +101,29 @@ const CSS = () => (
 
     /* ── LAYOUT ─────────────────────────────────────────── */
     .layout {
-      display: block;
+      display: flex;
       min-height: 100vh;
-      width: 100vw;
-      max-width: 100vw;
-      position: relative;
+      width: 100%;
       overflow-x: hidden;
     }
 
     /* ── SIDEBAR ────────────────────────────────────────── */
     .sidebar {
-      position: fixed;
-      top: 0; left: 0;
+      position: sticky;
+      top: 0;
+      align-self: flex-start;
       width: var(--w-side);
+      min-width: var(--w-side);
+      max-width: var(--w-side);
       height: 100vh;
       background: var(--bg-subtle);
       border-right: 1px solid var(--border);
       display: flex;
       flex-direction: column;
       z-index: 100;
-      transition: transform .25s ease;
-      overflow: hidden;
-      box-shadow: 1px 0 0 var(--border), 4px 0 24px rgba(0,0,0,0.5);
+      flex-shrink: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
     }
 
     .side-brand {
@@ -254,12 +255,11 @@ const CSS = () => (
 
     /* ── MAIN ────────────────────────────────────────────── */
     .main-content {
-      margin-left: var(--w-side);
-      min-height: 100vh;
+      flex: 1;
+      min-width: 0;
       display: flex;
       flex-direction: column;
-      width: calc(100vw - var(--w-side));
-      box-sizing: border-box;
+      overflow: hidden;
     }
 
     /* ── TOPBAR ─────────────────────────────────────────── */
@@ -275,6 +275,7 @@ const CSS = () => (
       top: 0;
       z-index: 50;
       flex-shrink: 0;
+      width: 100%;
     }
     .hamburger {
       display: none !important;
@@ -362,9 +363,10 @@ const CSS = () => (
     .page {
       padding: 28px 32px;
       flex: 1;
-      width: 100%;
       min-width: 0;
+      width: 100%;
       box-sizing: border-box;
+      overflow-x: hidden;
       animation: pageIn .2s ease;
     }
 
@@ -1016,26 +1018,61 @@ const CSS = () => (
     /* ── SIDEBAR ALWAYS VISIBLE DESKTOP ────────────────── */
     @media (min-width: 769px) {
       .sidebar {
-        transform: translateX(0) !important;
-        display: flex !important;
-        visibility: visible !important;
-      }
+      position: sticky;
+      top: 0;
+      align-self: flex-start;
+      width: var(--w-side);
+      min-width: var(--w-side);
+      max-width: var(--w-side);
+      height: 100vh;
+      background: var(--bg-subtle);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      z-index: 100;
+      flex-shrink: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
       .main-content {
-        margin-left: var(--w-side) !important;
-        width: calc(100vw - var(--w-side)) !important;
-      }
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
     }
 
     /* ── RESPONSIVE ──────────────────────────────────────── */
     @media (max-width: 1400px) {
       :root { --w-side: 210px; }
-      .main-content { width: calc(100vw - 210px) !important; margin-left: 210px !important; }
-      .page { padding: 24px 28px; }
+      .main-content {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+      .page {
+      padding: 28px 32px;
+      flex: 1;
+      min-width: 0;
+      width: 100%;
+      box-sizing: border-box;
+      overflow-x: hidden;
+      animation: pageIn .2s ease;
+    }
       .stats-row { grid-template-columns: repeat(4, minmax(0,1fr)); }
     }
     @media (max-width: 1200px) {
       :root { --w-side: 195px; }
-      .main-content { width: calc(100vw - 195px) !important; margin-left: 195px !important; }
+      .main-content {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
       .topbar-search { width: 180px; }
     }
     @media (max-width: 1024px) {
@@ -1043,19 +1080,41 @@ const CSS = () => (
       .stats-row { grid-template-columns: repeat(2, minmax(0,1fr)); }
     }
     @media (max-width: 768px) {
+      .layout { display: block; }
       .sidebar {
-        transform: translateX(-100%) !important;
         position: fixed !important;
-        z-index: 200 !important;
+        transform: translateX(-100%) !important;
+        z-index: 200;
       }
       .sidebar.open { transform: translateX(0) !important; }
       .main-content {
-        margin-left: 0 !important;
-        width: 100vw !important;
+        width: 100% !important;
+        min-width: 0;
       }
       .hamburger { display: flex !important; }
-      .page { padding: 16px; }
-      .topbar { padding: 0 16px; }
+      .page {
+      padding: 28px 32px;
+      flex: 1;
+      min-width: 0;
+      width: 100%;
+      box-sizing: border-box;
+      overflow-x: hidden;
+      animation: pageIn .2s ease;
+    }
+      .topbar {
+      height: 52px;
+      background: var(--bg-subtle);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      flex-shrink: 0;
+      width: 100%;
+    }
       .stats-row { grid-template-columns: 1fr 1fr; gap: 10px; }
       .grid-3 { grid-template-columns: 1fr 1fr; }
       .grid-auto { grid-template-columns: 1fr; }
@@ -1068,8 +1127,29 @@ const CSS = () => (
       .stat-card .stat-value { font-size: 20px; }
       .page-header { flex-direction: column; gap: 10px; }
       .grid-3 { grid-template-columns: 1fr; }
-      .topbar { height: 50px; }
-      .page { padding: 12px; }
+      .topbar {
+      height: 52px;
+      background: var(--bg-subtle);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      flex-shrink: 0;
+      width: 100%;
+    }
+      .page {
+      padding: 28px 32px;
+      flex: 1;
+      min-width: 0;
+      width: 100%;
+      box-sizing: border-box;
+      overflow-x: hidden;
+      animation: pageIn .2s ease;
+    }
     }
   `}</style>
 );

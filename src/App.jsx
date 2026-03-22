@@ -1,1204 +1,651 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
-  initDB, getDB, saveDB, resetDB,
+  initDB, getDB, resetDB,
   getAll, insert, update, remove,
   enregistrerPaiement, genererReference,
   getMeta, updateMeta,
   exportSQL, exportJSON, exportCSV, downloadFile,
 } from "./db.js";
 
-/* ─────────────────────────────────────────────────────────────────
-   DESIGN SYSTEM — inspired by Linear, Vercel, Raycast
-   Police : Geist (Vercel) + JetBrains Mono pour les chiffres
-   Palette : Slate dark avec accents orange chaleureux
-   Philosophie : "Less chrome, more content"
-───────────────────────────────────────────────────────────────── */
 const CSS = () => (
   <style>{`
     @import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap');
-
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      /* Sidebar */
-      --w-side: 220px;
+      --w-side: 228px;
+      --h-top:  52px;
 
-      /* Fond de page — très sombre */
-      --bg-base:   #080C12;
-      /* Sidebar — clairement différent du fond */
-      --bg-subtle: #0E1520;
-      --bg-muted:  #182030;
-      --bg-hover:  #1E2A3D;
+      --bg:        #090D14;
+      --bg-side:   #0D1520;
+      --bg-card:   #111E30;
+      --bg-input:  #162030;
+      --bg-hover:  #1A2840;
+      --bg-muted:  #1E2D42;
 
-      /* Surfaces & cartes — plus claires que le fond */
-      --surface:        #131E2E;
-      --surface-raised: #192540;
-      --surface-overlay: #1E2D4A;
+      --border:    rgba(255,255,255,0.08);
+      --border-hi: rgba(241,130,66,0.45);
 
-      /* Bordures bien visibles */
-      --border:       rgba(255,255,255,0.10);
-      --border-focus: rgba(241,130,66,0.5);
-      --border-muted: rgba(255,255,255,0.04);
+      --t1: #EEF4FF;
+      --t2: #8BA3C0;
+      --t3: #4A6280;
+      --t4: #2A3F58;
 
-      /* Typographie hiérarchique */
-      --text-primary:   #F1F5FB;
-      --text-secondary: #8BA0BC;
-      --text-muted:     #4E6280;
-      --text-placeholder: #374B63;
+      --accent: #F18242;
+      --acc-lo: rgba(241,130,66,0.12);
+      --acc-gl: rgba(241,130,66,0.22);
 
-      /* Accent principal — orange chaud, pas criard */
-      --accent:       #F18242;
-      --accent-light: #F5A370;
-      --accent-dim:   rgba(241,130,66,0.12);
-      --accent-glow:  rgba(241,130,66,0.20);
+      --green:  #3DBF8A; --green-lo: rgba(61,191,138,0.10);
+      --blue:   #4A9EF5; --blue-lo:  rgba(74,158,245,0.10);
+      --amber:  #E8A84C; --amber-lo: rgba(232,168,76,0.10);
+      --red:    #E05858; --red-lo:   rgba(224,88,88,0.10);
+      --purple: #9B7FE8; --purple-lo:rgba(155,127,232,0.10);
 
-      /* Couleurs sémantiques sobres */
-      --green:      #3FB984;
-      --green-dim:  rgba(63,185,132,0.10);
-      --blue:       #4B9EF5;
-      --blue-dim:   rgba(75,158,245,0.10);
-      --amber:      #E8A84C;
-      --amber-dim:  rgba(232,168,76,0.10);
-      --red:        #E05C5C;
-      --red-dim:    rgba(224,92,92,0.10);
-      --purple:     #9B7FE8;
-      --purple-dim: rgba(155,127,232,0.10);
-
-      /* Rayons */
-      --r-xs:  4px;
-      --r-sm:  7px;
-      --r-md:  10px;
-      --r-lg:  14px;
-      --r-xl:  18px;
-
-      /* Ombres */
-      --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
-      --shadow-md: 0 4px 16px rgba(0,0,0,0.35);
-      --shadow-lg: 0 8px 32px rgba(0,0,0,0.45);
-      --shadow-xl: 0 16px 56px rgba(0,0,0,0.55);
+      --r1: 5px; --r2: 8px; --r3: 12px; --r4: 16px; --r5: 20px;
     }
 
-    html, body {
-      width: 100%;
-      height: 100%;
-      overflow-x: hidden;
-    }
+    html, body { width: 100%; height: 100%; overflow-x: hidden; }
     html { font-size: 15px; }
-
     body {
       font-family: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
-      background: var(--bg-base);
-      color: var(--text-primary);
+      background: var(--bg);
+      color: var(--t1);
       -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      overflow-x: hidden;
     }
-
     ::-webkit-scrollbar { width: 4px; height: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
-    ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+    ::-webkit-scrollbar-thumb { background: var(--t4); border-radius: 99px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--t3); }
 
-    /* ── LAYOUT ─────────────────────────────────────────── */
-    .layout {
+    /* ── LAYOUT ─────────────────────────────────────────────────── */
+    .app {
       display: flex;
       min-height: 100vh;
       width: 100%;
       overflow-x: hidden;
     }
 
-    /* ── SIDEBAR ────────────────────────────────────────── */
+    /* ── SIDEBAR ────────────────────────────────────────────────── */
     .sidebar {
       position: sticky;
       top: 0;
-      align-self: flex-start;
       width: var(--w-side);
       min-width: var(--w-side);
-      max-width: var(--w-side);
       height: 100vh;
-      background: var(--bg-subtle);
+      background: var(--bg-side);
       border-right: 1px solid var(--border);
       display: flex;
       flex-direction: column;
-      z-index: 100;
       flex-shrink: 0;
       overflow-y: auto;
       overflow-x: hidden;
+      z-index: 100;
     }
-
-    .side-brand {
-      padding: 18px 16px 14px;
+    .s-brand {
+      padding: 18px 16px 15px;
       border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 11px;
       flex-shrink: 0;
     }
-    .side-logo {
+    .s-logo {
       width: 32px; height: 32px;
       background: var(--accent);
-      border-radius: var(--r-sm);
+      border-radius: var(--r2);
       display: flex; align-items: center; justify-content: center;
-      font-size: 16px;
-      flex-shrink: 0;
-      box-shadow: 0 2px 10px var(--accent-glow);
-      flex-shrink: 0;
+      font-size: 16px; flex-shrink: 0;
+      box-shadow: 0 2px 10px var(--acc-gl);
     }
-    .side-brand-text .name {
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--text-primary);
-      line-height: 1.2;
-      letter-spacing: -0.02em;
+    .s-appname {
+      font-size: 13.5px; font-weight: 700;
+      color: var(--t1); letter-spacing: -0.02em; line-height: 1.2;
     }
-    .side-brand-text .version {
-      font-size: 9.5px;
-      color: var(--accent);
+    .s-version {
+      font-size: 10px; color: var(--accent);
       font-family: 'Geist Mono', monospace;
-      margin-top: 2px;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.04em; margin-top: 2px;
     }
-
-    .side-nav {
-      flex: 1;
-      padding: 10px 8px;
-      overflow-y: auto;
-      overflow-x: hidden;
+    .s-nav { flex: 1; padding: 12px 10px; overflow-y: auto; }
+    .s-section { margin-bottom: 22px; }
+    .s-label {
+      font-size: 10px; font-weight: 600; color: var(--t3);
+      text-transform: uppercase; letter-spacing: 0.09em;
+      padding: 0 8px 7px; display: block;
     }
-
-    .side-section {
-      margin-bottom: 20px;
-    }
-    .side-section-label {
-      font-size: 10px;
-      font-weight: 600;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      padding: 0 8px 6px;
-      display: block;
-    }
-
-    .nav-link {
-      display: flex;
-      align-items: center;
-      gap: 9px;
-      padding: 7px 9px;
-      border-radius: var(--r-sm);
-      cursor: pointer;
-      transition: background .15s, color .15s;
-      color: var(--text-secondary);
-      font-size: 13.5px;
-      font-weight: 500;
-      margin-bottom: 1px;
-      user-select: none;
+    .nav-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 7px 10px; border-radius: var(--r2);
+      cursor: pointer; transition: all .15s;
+      color: var(--t2); font-size: 13px; font-weight: 500;
+      margin-bottom: 2px; user-select: none;
       white-space: nowrap;
-      overflow: hidden;
     }
-    .nav-link:hover {
-      background: var(--bg-hover);
-      color: var(--text-primary);
+    .nav-item:hover { background: var(--bg-hover); color: var(--t1); }
+    .nav-item.active {
+      background: var(--acc-lo); color: var(--accent);
+      font-weight: 600; border-left: 2px solid var(--accent);
+      padding-left: 8px;
     }
-    .nav-link.active {
-      background: var(--accent-dim);
-      color: var(--accent);
-      font-weight: 600;
-      border-left: 2px solid var(--accent);
-      padding-left: 7px;
-    }
-    .nav-link .nav-icon {
-      font-size: 14px;
-      width: 18px;
-      text-align: center;
-      flex-shrink: 0;
-      opacity: 0.85;
-    }
-    .nav-link.active .nav-icon { opacity: 1; }
-
     .nav-badge {
-      margin-left: auto;
-      background: var(--accent);
-      color: #fff;
-      font-size: 9.5px;
-      font-weight: 700;
+      background: var(--accent); color: #fff;
+      font-size: 10px; font-weight: 700;
       font-family: 'Geist Mono', monospace;
-      padding: 1px 6px;
-      border-radius: 99px;
-      flex-shrink: 0;
+      padding: 1px 6px; border-radius: 99px; flex-shrink: 0;
     }
-    .nav-link.active .nav-badge { background: var(--accent); }
-
-    .side-footer {
-      padding: 10px 8px;
-      border-top: 1px solid var(--border);
-      flex-shrink: 0;
-    }
+    .nav-item.active .nav-badge { background: var(--accent); }
+    .s-footer { padding: 10px; border-top: 1px solid var(--border); flex-shrink: 0; }
     .user-row {
-      display: flex;
-      align-items: center;
-      gap: 9px;
-      padding: 8px 9px;
-      border-radius: var(--r-sm);
-      cursor: pointer;
-      transition: background .15s;
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 10px; border-radius: var(--r2);
+      cursor: pointer; transition: background .15s;
     }
     .user-row:hover { background: var(--bg-hover); }
-    .user-avatar {
-      width: 28px; height: 28px;
-      border-radius: var(--r-xs);
+    .u-av {
+      width: 28px; height: 28px; border-radius: var(--r1);
       background: linear-gradient(135deg, var(--accent), var(--amber));
       display: flex; align-items: center; justify-content: center;
-      font-size: 11px;
-      font-weight: 700;
-      color: #fff;
-      flex-shrink: 0;
-      font-family: 'Geist Mono', monospace;
+      font-size: 10.5px; font-weight: 700; color: #fff;
+      font-family: 'Geist Mono', monospace; flex-shrink: 0;
     }
-    .user-info .user-name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
-    .user-info .user-role { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+    .u-name { font-size: 13px; font-weight: 600; color: var(--t1); line-height: 1.2; }
+    .u-role { font-size: 10.5px; color: var(--t3); margin-top: 1px; }
 
-    /* ── MAIN ────────────────────────────────────────────── */
-    .main-content {
+    /* ── MAIN ───────────────────────────────────────────────────── */
+    .main {
       flex: 1;
       min-width: 0;
       display: flex;
       flex-direction: column;
-      overflow: hidden;
+      min-height: 100vh;
+      background: var(--bg);
     }
 
-    /* ── TOPBAR ─────────────────────────────────────────── */
+    /* ── TOPBAR ─────────────────────────────────────────────────── */
     .topbar {
-      height: 52px;
-      background: var(--bg-subtle);
+      height: var(--h-top);
+      background: var(--bg-side);
       border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      padding: 0 24px;
-      gap: 12px;
-      position: sticky;
-      top: 0;
-      z-index: 50;
+      display: flex; align-items: center;
+      padding: 0 26px; gap: 12px;
+      position: sticky; top: 0; z-index: 50;
       flex-shrink: 0;
-      width: 100%;
     }
-    .hamburger {
-      display: none !important;
-      width: 32px; height: 32px;
-      border-radius: var(--r-sm);
-      border: 1px solid var(--border);
-      background: transparent;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      color: var(--text-secondary);
-      font-size: 14px;
-      flex-shrink: 0;
+    .ham {
+      display: none;
+      width: 32px; height: 32px; border-radius: var(--r2);
+      border: 1px solid var(--border); background: transparent;
+      align-items: center; justify-content: center;
+      cursor: pointer; color: var(--t2); font-size: 15px;
       transition: all .15s;
     }
-    .hamburger:hover { background: var(--bg-hover); color: var(--text-primary); }
-
-    .topbar-title {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text-primary);
-      flex: 1;
-      letter-spacing: -0.01em;
+    .ham:hover { background: var(--bg-hover); color: var(--t1); }
+    .top-title {
+      font-size: 14px; font-weight: 600; color: var(--t1);
+      flex: 1; letter-spacing: -0.01em;
     }
-
-    .topbar-search {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: var(--bg-muted);
-      border: 1px solid var(--border);
-      border-radius: var(--r-md);
-      padding: 6px 12px;
-      width: 260px;
-      transition: border-color .15s;
+    .top-search {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--bg-muted); border: 1px solid var(--border);
+      border-radius: var(--r2); padding: 6px 12px;
+      width: 260px; transition: border-color .15s;
     }
-    .topbar-search:focus-within {
-      border-color: var(--border-focus);
+    .top-search:focus-within { border-color: var(--border-hi); }
+    .top-search input {
+      background: none; border: none; outline: none;
+      color: var(--t1); font-size: 13px;
+      font-family: 'Geist', sans-serif; width: 100%;
     }
-    .topbar-search input {
-      background: none;
-      border: none;
-      outline: none;
-      color: var(--text-primary);
-      font-size: 13px;
-      font-family: 'Geist', sans-serif;
-      width: 100%;
+    .top-search input::placeholder { color: var(--t3); }
+    .kbd {
+      font-family: 'Geist Mono', monospace; font-size: 10px;
+      color: var(--t3); background: var(--bg);
+      border: 1px solid var(--border); border-radius: var(--r1);
+      padding: 1px 5px; flex-shrink: 0;
     }
-    .topbar-search input::placeholder { color: var(--text-placeholder); }
-    .search-kbd {
-      font-family: 'Geist Mono', monospace;
-      font-size: 10px;
-      color: var(--text-muted);
-      background: var(--bg-base);
-      border: 1px solid var(--border);
-      border-radius: var(--r-xs);
-      padding: 1px 5px;
-      flex-shrink: 0;
-    }
-
-    .topbar-actions { display: flex; align-items: center; gap: 6px; }
+    .top-actions { display: flex; align-items: center; gap: 7px; }
     .top-btn {
-      width: 32px; height: 32px;
-      border-radius: var(--r-sm);
-      border: 1px solid var(--border);
-      background: transparent;
+      width: 32px; height: 32px; border-radius: var(--r2);
+      border: 1px solid var(--border); background: transparent;
       display: flex; align-items: center; justify-content: center;
-      cursor: pointer;
-      color: var(--text-secondary);
-      font-size: 14px;
-      transition: all .15s;
-      position: relative;
+      cursor: pointer; color: var(--t2); font-size: 14px;
+      transition: all .15s; position: relative;
     }
-    .top-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+    .top-btn:hover { background: var(--bg-hover); color: var(--t1); }
     .top-btn .dot {
-      position: absolute;
-      top: 6px; right: 6px;
-      width: 5px; height: 5px;
-      background: var(--accent);
-      border-radius: 50%;
-      border: 1.5px solid var(--bg-subtle);
+      position: absolute; top: 6px; right: 6px;
+      width: 5px; height: 5px; background: var(--accent);
+      border-radius: 50%; border: 1.5px solid var(--bg-side);
     }
 
-    /* ── PAGE ────────────────────────────────────────────── */
+    /* ── PAGE ───────────────────────────────────────────────────── */
     .page {
       padding: 28px 32px;
-      flex: 1;
-      min-width: 0;
-      width: 100%;
+      flex: 1; width: 100%;
       box-sizing: border-box;
-      overflow-x: hidden;
-      animation: pageIn .2s ease;
+      animation: fadeUp .22s ease;
     }
-
-    @keyframes pageIn {
-      from { opacity: 0; transform: translateY(6px); }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(5px); }
       to   { opacity: 1; transform: translateY(0); }
     }
 
-    .page-header {
-      display: flex;
-      align-items: flex-start;
+    /* ── PAGE HEADER ────────────────────────────────────────────── */
+    .page-head {
+      display: flex; align-items: flex-start;
       justify-content: space-between;
-      margin-bottom: 28px;
-      flex-wrap: wrap;
-      gap: 12px;
-      width: 100%;
+      margin-bottom: 28px; flex-wrap: wrap; gap: 14px;
     }
     .page-title {
-      font-size: 22px;
-      font-weight: 700;
-      color: var(--text-primary);
-      letter-spacing: -0.03em;
-      line-height: 1.2;
+      font-size: 22px; font-weight: 700;
+      color: var(--t1); letter-spacing: -0.03em; line-height: 1.2;
     }
-    .page-subtitle {
-      font-size: 13px;
-      color: var(--text-secondary);
-      margin-top: 4px;
-      line-height: 1.5;
-    }
+    .page-sub { font-size: 13px; color: var(--t2); margin-top: 4px; line-height: 1.5; }
     .page-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 
-    /* ── BUTTONS ─────────────────────────────────────────── */
+    /* ── BUTTONS ────────────────────────────────────────────────── */
     .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 7px 14px;
-      border-radius: var(--r-sm);
-      font-size: 13px;
-      font-weight: 500;
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 14px; border-radius: var(--r2);
+      font-size: 13px; font-weight: 500;
       font-family: 'Geist', sans-serif;
-      cursor: pointer;
-      border: none;
-      transition: all .15s;
-      white-space: nowrap;
-      flex-shrink: 0;
-      letter-spacing: -0.01em;
+      cursor: pointer; border: none;
+      transition: all .15s; white-space: nowrap; flex-shrink: 0;
+      letter-spacing: -0.01em; line-height: 1.3;
     }
-    .btn-primary {
-      background: var(--accent);
-      color: #fff;
-      box-shadow: 0 1px 4px var(--accent-glow);
-    }
-    .btn-primary:hover { background: var(--accent-light); box-shadow: 0 2px 8px var(--accent-glow); }
-    .btn-primary:active { transform: scale(0.98); }
-    .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
-
-    .btn-secondary {
-      background: var(--surface-raised);
-      color: var(--text-secondary);
-      border: 1px solid var(--border);
-    }
-    .btn-secondary:hover { background: var(--surface-overlay); color: var(--text-primary); }
-
-    .btn-ghost {
-      background: transparent;
-      color: var(--text-secondary);
-      border: 1px solid var(--border);
-    }
-    .btn-ghost:hover { background: var(--bg-hover); color: var(--text-primary); }
-
-    .btn-danger {
-      background: var(--red-dim);
-      color: var(--red);
-      border: 1px solid rgba(224,92,92,0.2);
-    }
-    .btn-danger:hover { background: rgba(224,92,92,0.18); }
-
-    .btn-success {
-      background: var(--green-dim);
-      color: var(--green);
-      border: 1px solid rgba(63,185,132,0.2);
-    }
-    .btn-success:hover { background: rgba(63,185,132,0.18); }
-
-    .btn-sm { padding: 5px 10px; font-size: 12px; border-radius: var(--r-xs); }
+    .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 1px 6px var(--acc-gl); }
+    .btn-primary:hover { filter: brightness(1.08); }
+    .btn-primary:active { transform: scale(.98); }
+    .btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+    .btn-ghost { background: var(--bg-card); color: var(--t2); border: 1px solid var(--border); }
+    .btn-ghost:hover { background: var(--bg-hover); color: var(--t1); }
+    .btn-danger { background: var(--red-lo); color: var(--red); border: 1px solid rgba(224,88,88,.2); }
+    .btn-danger:hover { background: rgba(224,88,88,.18); }
+    .btn-success { background: var(--green-lo); color: var(--green); border: 1px solid rgba(61,191,138,.2); }
+    .btn-success:hover { background: rgba(61,191,138,.18); }
+    .btn-sm { padding: 5px 11px; font-size: 12px; border-radius: var(--r1); }
     .btn-full { width: 100%; justify-content: center; }
 
-    /* ── CARDS ───────────────────────────────────────────── */
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--r-lg);
-      overflow: hidden;
-      width: 100%;
-    }
-    .card-header {
-      padding: 14px 18px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .card-title {
-      font-size: 13.5px;
-      font-weight: 600;
-      color: var(--text-primary);
-      letter-spacing: -0.01em;
-    }
+    /* ── CARDS ──────────────────────────────────────────────────── */
+    .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--r4); overflow: hidden; }
+    .card-head { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .card-title { font-size: 13.5px; font-weight: 600; color: var(--t1); letter-spacing: -0.01em; }
     .card-body { padding: 18px; }
 
-    /* ── STAT CARDS ──────────────────────────────────────── */
-    .stats-row {
+    /* ── STAT CARDS ─────────────────────────────────────────────── */
+    .kpi-grid {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 14px;
-      margin-bottom: 24px;
-      width: 100%;
+      gap: 14px; margin-bottom: 24px;
     }
-    .stat-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--r-lg);
-      padding: 20px;
-      position: relative;
-      overflow: hidden;
-      cursor: default;
-      transition: border-color .2s, transform .2s;
+    .kpi {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--r4); padding: 20px 22px;
+      position: relative; overflow: hidden;
+      transition: border-color .2s, transform .2s; cursor: default;
     }
-    .stat-card:hover {
-      border-color: var(--border-focus);
-      transform: translateY(-1px);
+    .kpi::after {
+      content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+      opacity: 0; transition: opacity .2s;
     }
-    .stat-card .stat-label {
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      margin-bottom: 12px;
-    }
-    .stat-card .stat-value {
-      font-family: 'Geist Mono', monospace;
-      font-size: clamp(20px, 2.5vw, 28px);
-      font-weight: 600;
-      color: var(--text-primary);
-      letter-spacing: -0.04em;
-      line-height: 1;
-    }
-    .stat-card .stat-change {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 11.5px;
-      font-weight: 500;
-      margin-top: 10px;
-      color: var(--text-muted);
-    }
-    .stat-card .stat-change.up { color: var(--green); }
-    .stat-card .stat-change.dn { color: var(--red); }
-    /* Accent bar top */
-    .stat-card::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 2px;
-      opacity: 0;
-      transition: opacity .2s;
-    }
-    .stat-card:hover::before { opacity: 1; }
-    .stat-card.s-orange::before { background: var(--accent); }
-    .stat-card.s-green::before  { background: var(--green); }
-    .stat-card.s-blue::before   { background: var(--blue); }
-    .stat-card.s-purple::before { background: var(--purple); }
-    .stat-icon {
-      width: 34px; height: 34px;
-      border-radius: var(--r-sm);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 16px;
-      margin-bottom: 14px;
-    }
-    .si-orange { background: var(--accent-dim); }
-    .si-green  { background: var(--green-dim); }
-    .si-blue   { background: var(--blue-dim); }
-    .si-purple { background: var(--purple-dim); }
+    .kpi:hover { border-color: var(--border-hi); transform: translateY(-1px); }
+    .kpi:hover::after { opacity: 1; }
+    .kpi.k-or::after { background: var(--accent); }
+    .kpi.k-gr::after { background: var(--green); }
+    .kpi.k-bl::after { background: var(--blue); }
+    .kpi.k-pu::after { background: var(--purple); }
 
-    /* ── GRIDS ───────────────────────────────────────────── */
+    .kpi-label { font-size: 11px; font-weight: 600; color: var(--t3); text-transform: uppercase; letter-spacing: .09em; margin-bottom: 10px; }
+    .kpi-value { font-family: 'Geist Mono', monospace; font-size: clamp(19px,2.2vw,27px); font-weight: 600; color: var(--t1); letter-spacing: -.04em; line-height: 1; }
+    .kpi-trend { font-size: 11.5px; font-weight: 500; margin-top: 10px; display: flex; align-items: center; gap: 4px; color: var(--t3); }
+    .kpi-trend.up { color: var(--green); }
+    .kpi-trend.dn { color: var(--red); }
+
+    /* ── GRIDS ──────────────────────────────────────────────────── */
     .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; width: 100%; }
     .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 14px; width: 100%; }
-    .grid-auto { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 14px; width: 100%; }
+    .grid-auto { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px,1fr)); gap: 14px; width: 100%; }
 
-    /* ── TABLE ───────────────────────────────────────────── */
-    .table-wrap { overflow-x: auto; }
-    .table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
+    /* ── TABLE ──────────────────────────────────────────────────── */
+    .t-wrap { overflow-x: auto; width: 100%; }
+    .t {
+      width: 100%; border-collapse: collapse;
+      font-size: 13px; white-space: nowrap;
     }
-    .table th {
-      padding: 10px 16px;
-      text-align: left;
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
+    .t th {
+      padding: 10px 14px; text-align: left;
+      font-size: 10.5px; font-weight: 600; color: var(--t3);
+      text-transform: uppercase; letter-spacing: .07em;
       border-bottom: 1px solid var(--border);
-      background: var(--surface);
-      white-space: nowrap;
+      background: var(--bg-card);
     }
-    .table td {
-      padding: 11px 16px;
-      color: var(--text-secondary);
-      border-bottom: 1px solid var(--border-muted);
+    .t td {
+      padding: 12px 14px; color: var(--t2);
+      border-bottom: 1px solid rgba(255,255,255,.04);
       vertical-align: middle;
-      transition: background .1s, color .1s;
     }
-    .table tr:last-child td { border-bottom: none; }
-    .table tbody tr:hover td {
-      background: var(--bg-hover);
-      color: var(--text-primary);
-    }
-    .cell-person { display: flex; align-items: center; gap: 10px; }
+    .t tr:last-child td { border-bottom: none; }
+    .t tbody tr:hover td { background: var(--bg-hover); color: var(--t1); }
+    .cell-name { display: flex; align-items: center; gap: 10px; }
 
-    /* ── AVATARS ─────────────────────────────────────────── */
-    .avatar {
-      width: 32px; height: 32px;
-      border-radius: var(--r-sm);
+    /* ── AVATAR ─────────────────────────────────────────────────── */
+    .av {
+      width: 32px; height: 32px; border-radius: var(--r2);
       display: flex; align-items: center; justify-content: center;
       font-family: 'Geist Mono', monospace;
-      font-size: 11px;
-      font-weight: 600;
-      flex-shrink: 0;
-      overflow: hidden;
-      text-overflow: clip;
-      white-space: nowrap;
-      line-height: 1;
-      letter-spacing: -0.02em;
+      font-size: 11px; font-weight: 600;
+      flex-shrink: 0; overflow: hidden; line-height: 1;
     }
-    .avatar-lg {
-      width: 42px; height: 42px;
-      border-radius: var(--r-md);
-      font-size: 13px;
-      overflow: hidden;
-    }
-    .av-orange { background: rgba(241,130,66,.15); color: var(--accent); }
-    .av-blue   { background: rgba(75,158,245,.15); color: var(--blue); }
-    .av-green  { background: rgba(63,185,132,.15); color: var(--green); }
-    .av-purple { background: rgba(155,127,232,.15); color: var(--purple); }
-    .av-amber  { background: rgba(232,168,76,.15); color: var(--amber); }
+    .av-lg { width: 40px; height: 40px; border-radius: var(--r3); font-size: 13px; }
+    .av-or { background: rgba(241,130,66,.15); color: var(--accent); }
+    .av-bl { background: rgba(74,158,245,.15); color: var(--blue); }
+    .av-gr { background: rgba(61,191,138,.15); color: var(--green); }
+    .av-pu { background: rgba(155,127,232,.15); color: var(--purple); }
+    .av-am { background: rgba(232,168,76,.15); color: var(--amber); }
 
-    /* ── STATUS BADGES ───────────────────────────────────── */
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      padding: 3px 9px;
-      border-radius: 99px;
-      font-size: 11px;
-      font-weight: 600;
-      white-space: nowrap;
-      letter-spacing: 0.01em;
+    /* ── BADGE ──────────────────────────────────────────────────── */
+    .tag {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 9px; border-radius: 99px;
+      font-size: 11px; font-weight: 600;
+      white-space: nowrap; letter-spacing: .01em;
     }
-    .badge::before {
-      content: '';
-      width: 5px; height: 5px;
-      border-radius: 50%;
-      background: currentColor;
-      flex-shrink: 0;
-    }
-    .badge-green  { background: var(--green-dim);  color: var(--green); }
-    .badge-amber  { background: var(--amber-dim);  color: var(--amber); }
-    .badge-red    { background: var(--red-dim);    color: var(--red); }
-    .badge-blue   { background: var(--blue-dim);   color: var(--blue); }
-    .badge-orange { background: var(--accent-dim); color: var(--accent); }
-    .badge-purple { background: var(--purple-dim); color: var(--purple); }
+    .tag::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+    .tag-green  { background: var(--green-lo);  color: var(--green); }
+    .tag-amber  { background: var(--amber-lo);  color: var(--amber); }
+    .tag-red    { background: var(--red-lo);    color: var(--red); }
+    .tag-blue   { background: var(--blue-lo);   color: var(--blue); }
+    .tag-orange { background: var(--acc-lo);    color: var(--accent); }
+    .tag-purple { background: var(--purple-lo); color: var(--purple); }
 
-    /* ── PROGRESS ────────────────────────────────────────── */
-    .progress { height: 5px; background: var(--bg-muted); border-radius: 99px; overflow: hidden; }
-    .progress-fill { height: 100%; border-radius: 99px; transition: width .5s ease; }
-    .pf-orange { background: var(--accent); }
-    .pf-green  { background: var(--green); }
-    .pf-blue   { background: var(--blue); }
-    .pf-purple { background: var(--purple); }
+    /* ── PROGRESS ───────────────────────────────────────────────── */
+    .bar { height: 5px; background: var(--bg-muted); border-radius: 99px; overflow: hidden; flex: 1; }
+    .bar-fill { height: 100%; border-radius: 99px; transition: width .5s ease; }
+    .bf-or { background: var(--accent); }
+    .bf-gr { background: var(--green); }
+    .bf-bl { background: var(--blue); }
+    .bf-pu { background: var(--purple); }
 
-    /* ── FORMS ───────────────────────────────────────────── */
-    .field { margin-bottom: 14px; }
-    .field-label {
-      display: block;
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--text-secondary);
-      margin-bottom: 6px;
+    /* ── FORMS ──────────────────────────────────────────────────── */
+    .field { margin-bottom: 13px; }
+    .field-lbl { display: block; font-size: 11.5px; font-weight: 500; color: var(--t2); margin-bottom: 5px; }
+    .field-inp {
+      width: 100%; padding: 8px 12px;
+      background: var(--bg-input); border: 1px solid var(--border);
+      border-radius: var(--r2); color: var(--t1);
+      font-size: 13.5px; font-family: 'Geist', sans-serif;
+      outline: none; transition: border-color .15s;
+      appearance: none; line-height: 1.4;
     }
-    .field-input {
-      width: 100%;
-      padding: 8px 12px;
-      background: var(--bg-muted);
-      border: 1px solid var(--border);
-      border-radius: var(--r-sm);
-      color: var(--text-primary);
-      font-size: 13.5px;
-      font-family: 'Geist', sans-serif;
-      outline: none;
-      transition: border-color .15s, box-shadow .15s;
-      appearance: none;
-    }
-    .field-input:focus {
-      border-color: var(--border-focus);
-      box-shadow: 0 0 0 3px var(--accent-dim);
-    }
-    .field-input::placeholder { color: var(--text-placeholder); }
-    textarea.field-input { resize: vertical; min-height: 80px; line-height: 1.5; }
-    .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .field-inp:focus { border-color: var(--border-hi); box-shadow: 0 0 0 3px var(--acc-lo); }
+    .field-inp::placeholder { color: var(--t3); }
+    textarea.field-inp { resize: vertical; min-height: 80px; }
+    .fgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
-    /* ── MODAL ───────────────────────────────────────────── */
-    .modal-backdrop {
+    /* ── FILTER BAR ─────────────────────────────────────────────── */
+    .filter-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+    .search-input {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--r2); padding: 7px 13px;
+      flex: 1; min-width: 220px; transition: border-color .15s;
+    }
+    .search-input:focus-within { border-color: var(--border-hi); }
+    .search-input input {
+      background: none; border: none; outline: none;
+      color: var(--t1); font-size: 13px;
+      font-family: 'Geist', sans-serif; width: 100%;
+    }
+    .search-input input::placeholder { color: var(--t3); }
+
+    /* ── MODAL ──────────────────────────────────────────────────── */
+    .modal-bg {
       position: fixed; inset: 0;
-      background: rgba(0,0,0,0.65);
-      backdrop-filter: blur(4px);
+      background: rgba(0,0,0,.65); backdrop-filter: blur(5px);
       display: flex; align-items: center; justify-content: center;
-      z-index: 999;
-      padding: 20px;
+      z-index: 999; padding: 20px;
       animation: fadeIn .15s ease;
     }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
     .modal {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--r-xl);
-      width: 100%;
-      max-width: 540px;
-      max-height: 88vh;
-      overflow-y: auto;
-      box-shadow: var(--shadow-xl);
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--r5); width: 100%;
+      max-width: 540px; max-height: 88vh; overflow-y: auto;
+      box-shadow: 0 24px 70px rgba(0,0,0,.55);
       animation: modalIn .2s cubic-bezier(.16,1,.3,1);
     }
     .modal-wide { max-width: 620px; }
     @keyframes modalIn {
       from { opacity: 0; transform: scale(.96) translateY(8px); }
-      to   { opacity: 1; transform: scale(1) translateY(0); }
+      to   { opacity: 1; transform: none; }
     }
     .modal-head {
-      padding: 18px 20px 16px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      position: sticky; top: 0;
-      background: var(--surface);
-      z-index: 2;
+      padding: 16px 20px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; background: var(--bg-card); z-index: 2;
     }
-    .modal-title { font-size: 15px; font-weight: 600; letter-spacing: -0.02em; }
-    .modal-close {
-      width: 26px; height: 26px;
-      border-radius: var(--r-xs);
-      background: var(--bg-muted);
-      border: none;
-      color: var(--text-muted);
-      cursor: pointer;
-      font-size: 16px;
+    .modal-title { font-size: 15px; font-weight: 600; letter-spacing: -.02em; }
+    .modal-x {
+      width: 26px; height: 26px; border-radius: var(--r1);
+      background: var(--bg-muted); border: none;
+      color: var(--t2); cursor: pointer; font-size: 16px;
       display: flex; align-items: center; justify-content: center;
       transition: all .15s;
     }
-    .modal-close:hover { background: var(--red-dim); color: var(--red); }
+    .modal-x:hover { background: var(--red-lo); color: var(--red); }
     .modal-body { padding: 20px; }
-    .modal-footer {
-      padding: 14px 20px;
-      border-top: 1px solid var(--border);
-      display: flex;
-      gap: 8px;
-      justify-content: flex-end;
-    }
+    .modal-foot { padding: 14px 20px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; }
 
-    /* ── FILTER BAR ──────────────────────────────────────── */
-    .filter-bar {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 16px;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-    .search-box {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--r-sm);
-      padding: 7px 12px;
-      flex: 1;
-      min-width: 200px;
-      transition: border-color .15s;
-    }
-    .search-box:focus-within { border-color: var(--border-focus); }
-    .search-box input {
-      background: none; border: none; outline: none;
-      color: var(--text-primary);
-      font-size: 13px;
-      font-family: 'Geist', sans-serif;
-      width: 100%;
-    }
-    .search-box input::placeholder { color: var(--text-placeholder); }
+    /* ── TIMELINE ───────────────────────────────────────────────── */
+    .tl { display: flex; flex-direction: column; }
+    .tl-row { display: flex; gap: 12px; padding-bottom: 16px; position: relative; }
+    .tl-row:last-child { padding-bottom: 0; }
+    .tl-row:not(:last-child)::after { content: ''; position: absolute; left: 12px; top: 26px; bottom: 0; width: 1px; background: var(--border); }
+    .tl-dot { width: 26px; height: 26px; border-radius: var(--r2); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; z-index: 1; }
+    .tl-main { font-size: 13px; font-weight: 500; color: var(--t1); }
+    .tl-sub  { font-size: 12px; color: var(--t3); margin-top: 2px; }
 
-    /* ── MONITOR CARD ────────────────────────────────────── */
-    .monitor-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--r-lg);
-      padding: 20px;
-      transition: border-color .2s, transform .2s;
-      cursor: default;
+    /* ── TOP LIST ───────────────────────────────────────────────── */
+    .top-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,.04); }
+    .top-row:last-child { border-bottom: none; }
+    .rank {
+      width: 20px; height: 20px; border-radius: var(--r1);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 700;
+      font-family: 'Geist Mono', monospace; flex-shrink: 0;
     }
-    .monitor-card:hover {
-      border-color: var(--border-focus);
-      transform: translateY(-1px);
-    }
-    .monitor-head { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 18px; overflow: hidden; }
-    .monitor-name { font-size: 14.5px; font-weight: 600; letter-spacing: -0.02em; }
-    .monitor-role { font-size: 12px; color: var(--accent); margin-top: 2px; }
-    .stars { color: var(--amber); font-size: 11px; letter-spacing: 2px; margin-top: 4px; }
-    .monitor-meta {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 6px 10px;
-      font-size: 12px;
-      margin-bottom: 14px;
-    }
-    .meta-key { color: var(--text-muted); }
-    .meta-val { color: var(--text-secondary); text-align: right; font-family: 'Geist Mono', monospace; font-size: 11.5px; }
-    .monitor-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-top: 4px; }
-    .mstat { text-align: center; background: var(--bg-muted); border-radius: var(--r-sm); padding: 12px 8px; }
-    .mstat-v { font-family: 'Geist Mono', monospace; font-size: 18px; font-weight: 600; letter-spacing: -0.03em; }
-    .mstat-l { font-size: 9.5px; color: var(--text-muted); margin-top: 3px; text-transform: uppercase; letter-spacing: 0.06em; }
+    .rk1 { background: rgba(232,168,76,.18); color: var(--amber); }
+    .rk2 { background: rgba(74,158,245,.14); color: var(--blue); }
+    .rk3 { background: rgba(155,127,232,.14); color: var(--purple); }
+    .rkn { background: var(--bg-muted); color: var(--t3); }
 
-    /* ── VEHICLE CARD ────────────────────────────────────── */
-    .vehicle-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--r-lg);
-      overflow: hidden;
-      transition: border-color .2s;
-    }
-    .vehicle-card:hover { border-color: var(--border-focus); }
-    .vehicle-thumb {
-      height: 100px;
-      background: var(--bg-muted);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 44px;
-    }
-    .vehicle-body { padding: 16px; }
+    /* ── INFO GRID ──────────────────────────────────────────────── */
+    .info-g { display: grid; grid-template-columns: auto 1fr; gap: 7px 16px; font-size: 12.5px; align-items: start; }
+    .ik { color: var(--t3); white-space: nowrap; }
+    .iv { color: var(--t2); text-align: right; word-break: break-word; }
 
-    /* ── PAYMENT METHOD ──────────────────────────────────── */
-    .pay-option {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 12px;
-      background: var(--bg-muted);
-      border: 1.5px solid var(--border);
-      border-radius: var(--r-sm);
-      cursor: pointer;
-      transition: all .15s;
-      margin-bottom: 7px;
-    }
-    .pay-option:hover { border-color: var(--accent-glow); background: var(--accent-dim); }
-    .pay-option.selected { border-color: var(--accent); background: var(--accent-dim); }
-    .pay-option .pay-name { font-size: 13px; font-weight: 500; }
-
-    /* ── DETAIL PANEL ────────────────────────────────────── */
-    .detail-panel {
-      position: fixed;
-      top: 0; right: -440px;
-      width: 440px;
-      height: 100vh;
-      background: var(--surface);
-      border-left: 1px solid var(--border);
-      z-index: 200;
-      overflow-y: auto;
+    /* ── DETAIL PANEL ───────────────────────────────────────────── */
+    .detail {
+      position: fixed; top: 0; right: -440px;
+      width: 440px; height: 100vh;
+      background: var(--bg-card); border-left: 1px solid var(--border);
+      z-index: 200; overflow-y: auto;
       transition: right .3s cubic-bezier(.4,0,.2,1);
-      box-shadow: var(--shadow-xl);
+      box-shadow: -12px 0 40px rgba(0,0,0,.4);
     }
-    .detail-panel.open { right: 0; }
+    .detail.open { right: 0; }
     .detail-head {
-      padding: 16px 20px;
-      border-bottom: 1px solid var(--border);
+      padding: 16px 20px; border-bottom: 1px solid var(--border);
       display: flex; align-items: center; justify-content: space-between;
-      position: sticky; top: 0;
-      background: var(--surface); z-index: 2;
+      position: sticky; top: 0; background: var(--bg-card); z-index: 2;
     }
     .detail-body { padding: 20px; }
 
-    /* ── TIMELINE ────────────────────────────────────────── */
-    .timeline { display: flex; flex-direction: column; gap: 0; }
-    .tl-item { display: flex; gap: 12px; padding-bottom: 16px; position: relative; }
-    .tl-item:last-child { padding-bottom: 0; }
-    .tl-item:not(:last-child)::after {
-      content: '';
-      position: absolute;
-      left: 12px; top: 26px; bottom: 0;
-      width: 1px;
-      background: var(--border);
+    /* ── MONITOR CARD ───────────────────────────────────────────── */
+    .m-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--r4); padding: 20px;
+      transition: border-color .2s, transform .2s;
     }
-    .tl-dot {
-      width: 26px; height: 26px;
-      border-radius: var(--r-sm);
-      flex-shrink: 0;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 12px;
-      z-index: 1;
+    .m-card:hover { border-color: var(--border-hi); transform: translateY(-1px); }
+    .m-head { display: flex; align-items: flex-start; gap: 13px; margin-bottom: 16px; }
+    .m-name { font-size: 14.5px; font-weight: 600; letter-spacing: -.02em; }
+    .m-role { font-size: 12px; color: var(--accent); margin-top: 2px; }
+    .stars  { color: var(--amber); font-size: 11px; letter-spacing: 2px; margin-top: 4px; }
+    .m-meta { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; font-size: 12px; margin-bottom: 14px; }
+    .mk { color: var(--t3); } .mv { color: var(--t2); text-align: right; font-family: 'Geist Mono', monospace; font-size: 11.5px; }
+    .m-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+    .mstat { text-align: center; background: var(--bg-muted); border-radius: var(--r2); padding: 11px 6px; }
+    .mstat-v { font-family: 'Geist Mono', monospace; font-size: 17px; font-weight: 600; letter-spacing: -.03em; }
+    .mstat-l { font-size: 9.5px; color: var(--t3); margin-top: 3px; text-transform: uppercase; letter-spacing: .06em; }
+
+    /* ── VEHICLE CARD ───────────────────────────────────────────── */
+    .v-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--r4); overflow: hidden; transition: border-color .2s; }
+    .v-card:hover { border-color: var(--border-hi); }
+    .v-thumb { height: 100px; background: var(--bg-muted); display: flex; align-items: center; justify-content: center; font-size: 46px; }
+    .v-body { padding: 16px; }
+
+    /* ── PAYMENT OPTIONS ────────────────────────────────────────── */
+    .pay-opt {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 13px; background: var(--bg-muted);
+      border: 1.5px solid var(--border); border-radius: var(--r2);
+      cursor: pointer; transition: all .15s; margin-bottom: 7px;
     }
-    .tl-title { font-size: 13px; font-weight: 500; color: var(--text-primary); }
-    .tl-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .pay-opt:hover,.pay-opt.sel { border-color: var(--accent); background: var(--acc-lo); }
 
-    /* ── TOP LIST ────────────────────────────────────────── */
-    .top-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border-muted); }
-    .top-item:last-child { border-bottom: none; }
-    .rank-badge {
-      width: 20px; height: 20px;
-      border-radius: var(--r-xs);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 10px; font-weight: 700;
-      font-family: 'Geist Mono', monospace;
-      flex-shrink: 0;
-    }
-    .rank-1 { background: rgba(232,168,76,.18); color: var(--amber); }
-    .rank-2 { background: rgba(75,158,245,.14); color: var(--blue); }
-    .rank-3 { background: rgba(155,127,232,.14); color: var(--purple); }
-    .rank-n { background: var(--bg-muted); color: var(--text-muted); }
-
-    /* ── INFO GRID ───────────────────────────────────────── */
-    .info-grid {
-      display: grid;
-      grid-template-columns: auto 1fr;
-      gap: 6px 16px;
-      font-size: 13px;
-      align-items: start;
-    }
-    .info-key { color: var(--text-muted); white-space: nowrap; }
-    .info-val { color: var(--text-secondary); text-align: right; word-break: break-word; }
-
-    /* ── DIVIDER ─────────────────────────────────────────── */
-    .divider { height: 1px; background: var(--border); margin: 14px 0; }
-
-    /* ── ALERT BANNER ────────────────────────────────────── */
+    /* ── ALERT ──────────────────────────────────────────────────── */
     .alert {
       display: flex; align-items: center; gap: 10px;
-      padding: 10px 14px;
-      border-radius: var(--r-sm);
-      margin-bottom: 20px;
-      font-size: 13px; font-weight: 500;
+      padding: 10px 14px; border-radius: var(--r2);
+      margin-bottom: 20px; font-size: 13px; font-weight: 500;
     }
-    .alert-warning {
-      background: var(--amber-dim);
-      border: 1px solid rgba(232,168,76,.25);
-      color: var(--amber);
-    }
-    .alert-danger {
-      background: var(--red-dim);
-      border: 1px solid rgba(224,92,92,.25);
-      color: var(--red);
-    }
+    .alert-warn { background: var(--amber-lo); border: 1px solid rgba(232,168,76,.25); color: var(--amber); }
+    .alert-err  { background: var(--red-lo);   border: 1px solid rgba(224,88,88,.25);  color: var(--red); }
 
-    /* ── TOAST ───────────────────────────────────────────── */
-    .toast-stack {
-      position: fixed;
-      bottom: 24px; right: 24px;
-      z-index: 9999;
-      display: flex; flex-direction: column; gap: 8px;
-      pointer-events: none;
-    }
+    /* ── TOAST ──────────────────────────────────────────────────── */
+    .toasts { position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
     .toast {
-      padding: 11px 16px;
-      border-radius: var(--r-md);
+      padding: 11px 16px; border-radius: var(--r3);
       font-size: 13px; font-weight: 500;
       min-width: 260px; max-width: 380px;
       display: flex; align-items: center; gap: 10px;
-      box-shadow: var(--shadow-lg);
+      box-shadow: 0 8px 28px rgba(0,0,0,.5);
       pointer-events: all;
       animation: toastIn .25s cubic-bezier(.16,1,.3,1);
       border: 1px solid transparent;
     }
     @keyframes toastIn { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
-    .toast-success { background: var(--surface-overlay); border-color: rgba(63,185,132,.3); color: var(--green); }
-    .toast-error   { background: var(--surface-overlay); border-color: rgba(224,92,92,.3);  color: var(--red); }
-    .toast-info    { background: var(--surface-overlay); border-color: rgba(75,158,245,.3);  color: var(--blue); }
+    .t-ok  { background: var(--bg-card); border-color: rgba(61,191,138,.3);  color: var(--green); }
+    .t-err { background: var(--bg-card); border-color: rgba(224,88,88,.3);   color: var(--red); }
+    .t-inf { background: var(--bg-card); border-color: rgba(74,158,245,.3);  color: var(--blue); }
 
-    /* ── DB VIEWER ───────────────────────────────────────── */
-    .code-block {
-      background: var(--bg-base);
-      border: 1px solid var(--border);
-      border-radius: var(--r-md);
-      padding: 14px 16px;
+    /* ── CODE BLOCK ─────────────────────────────────────────────── */
+    .code {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--r3); padding: 14px 16px;
       font-family: 'Geist Mono', monospace;
-      font-size: 12px;
-      line-height: 1.75;
-      color: var(--text-secondary);
-      overflow: auto;
-      white-space: pre;
-      max-height: 400px;
+      font-size: 12px; line-height: 1.75; color: var(--t2);
+      overflow: auto; white-space: pre; max-height: 420px;
     }
 
-    /* ── SETTINGS SECTION ────────────────────────────────── */
-    .settings-block {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--r-lg);
-      overflow: hidden;
-      margin-bottom: 14px;
-    }
-    .settings-block-head {
-      padding: 13px 18px;
-      border-bottom: 1px solid var(--border);
-      font-size: 13.5px;
-      font-weight: 600;
-      letter---spacing: -0.01em;
-      display: flex; align-items: center; gap: 8px;
-    }
-    .settings-block-body { padding: 18px; }
+    /* ── SETTINGS ───────────────────────────────────────────────── */
+    .s-block { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--r4); overflow: hidden; margin-bottom: 14px; }
+    .s-block-head { padding: 13px 18px; border-bottom: 1px solid var(--border); font-size: 13.5px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+    .s-block-body { padding: 18px; }
 
-    /* ── UTILS ───────────────────────────────────────────── */
-    .row { display: flex; align-items: center; }
-    .row-between { display: flex; align-items: center; justify-content: space-between; }
-    .gap-4  { gap: 4px; }
-    .gap-6  { gap: 6px; }
-    .gap-8  { gap: 8px; }
-    .gap-10 { gap: 10px; }
-    .gap-12 { gap: 12px; }
-    .mt-4   { margin-top: 4px; }
-    .mt-8   { margin-top: 8px; }
-    .mt-12  { margin-top: 12px; }
-    .mt-16  { margin-top: 16px; }
-    .mb-8   { margin-bottom: 8px; }
-    .mb-12  { margin-bottom: 12px; }
-    .mb-16  { margin-bottom: 16px; }
-    .ml-auto { margin-left: auto; }
-    .text-muted { color: var(--text-muted); font-size: 12px; }
-    .text-sm { font-size: 12px; color: var(--text-secondary); }
-    .text-mono { font-family: 'Geist Mono', monospace; }
-    .fw-600 { font-weight: 600; }
-    .fw-500 { font-weight: 500; }
-    .text-primary { color: var(--text-primary); }
-    .text-accent { color: var(--accent); }
-    .text-green { color: var(--green); }
-    .text-red { color: var(--red); }
+    /* ── DIVIDER ────────────────────────────────────────────────── */
+    .div { height: 1px; background: var(--border); margin: 14px 0; }
 
-    .empty-state { text-align: center; padding: 52px 20px; }
-    .empty-state .empty-icon { font-size: 36px; margin-bottom: 12px; opacity: 0.3; }
-    .empty-state .empty-text { font-size: 14px; font-weight: 500; color: var(--text-secondary); }
-    .empty-state .empty-sub  { font-size: 12.5px; color: var(--text-muted); margin-top: 4px; }
+    /* ── UTILS ──────────────────────────────────────────────────── */
+    .row    { display: flex; align-items: center; }
+    .rbtw   { display: flex; align-items: center; justify-content: space-between; }
+    .ml     { margin-left: auto; }
+    .g4     { gap: 4px; }  .g6  { gap: 6px; }  .g8  { gap: 8px; }
+    .g10    { gap: 10px; } .g12 { gap: 12px; }
+    .mt4    { margin-top: 4px; }   .mt8 { margin-top: 8px; }   .mt12 { margin-top: 12px; } .mt16 { margin-top: 16px; }
+    .mb8    { margin-bottom: 8px; } .mb12 { margin-bottom: 12px; } .mb16 { margin-bottom: 16px; } .mb24 { margin-bottom: 24px; }
+    .f600   { font-weight: 600; }
+    .mono   { font-family: 'Geist Mono', monospace; }
+    .t-acc  { color: var(--accent); }
+    .t-grn  { color: var(--green); }
+    .t-red  { color: var(--red); }
+    .t-mut  { color: var(--t3); font-size: 12px; }
+    .t-sec  { color: var(--t2); }
+    .t-pri  { color: var(--t1); }
+    .t-sm   { font-size: 12px; color: var(--t2); }
+    .nowrap { white-space: nowrap; }
+    .empty  { text-align: center; padding: 52px 20px; }
+    .empty-ico  { font-size: 36px; opacity: .25; margin-bottom: 12px; }
+    .empty-txt  { font-size: 14px; font-weight: 500; color: var(--t2); }
+    .empty-sub  { font-size: 12.5px; color: var(--t3); margin-top: 4px; }
 
-    /* ── SIDEBAR ALWAYS VISIBLE DESKTOP ────────────────── */
+    /* ── RESPONSIVE ─────────────────────────────────────────────── */
     @media (min-width: 769px) {
-      .sidebar {
-      position: sticky;
-      top: 0;
-      align-self: flex-start;
-      width: var(--w-side);
-      min-width: var(--w-side);
-      max-width: var(--w-side);
-      height: 100vh;
-      background: var(--bg-subtle);
-      border-right: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      z-index: 100;
-      flex-shrink: 0;
-      overflow-y: auto;
-      overflow-x: hidden;
+      .sidebar { position: sticky !important; transform: none !important; }
     }
-      .main-content {
-      flex: 1;
-      min-width: 0;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-    }
-
-    /* ── RESPONSIVE ──────────────────────────────────────── */
-    @media (max-width: 1400px) {
-      :root { --w-side: 210px; }
-      .main-content {
-      flex: 1;
-      min-width: 0;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-      .page {
-      padding: 28px 32px;
-      flex: 1;
-      min-width: 0;
-      width: 100%;
-      box-sizing: border-box;
-      overflow-x: hidden;
-      animation: pageIn .2s ease;
-    }
-      .stats-row { grid-template-columns: repeat(4, minmax(0,1fr)); }
-    }
-    @media (max-width: 1200px) {
-      :root { --w-side: 195px; }
-      .main-content {
-      flex: 1;
-      min-width: 0;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-      .topbar-search { width: 180px; }
-    }
-    @media (max-width: 1024px) {
-      .topbar-search { display: none; }
-      .stats-row { grid-template-columns: repeat(2, minmax(0,1fr)); }
-    }
+    @media (max-width: 1400px) { :root { --w-side: 215px; } .page { padding: 24px 28px; } }
+    @media (max-width: 1200px) { :root { --w-side: 200px; } .top-search { width: 200px; } }
+    @media (max-width: 1024px) { .top-search { display: none; } .kpi-grid { grid-template-columns: repeat(2,1fr); } }
     @media (max-width: 768px) {
-      .layout { display: block; }
-      .sidebar {
-        position: fixed !important;
-        transform: translateX(-100%) !important;
-        z-index: 200;
-      }
+      .app { display: block; }
+      .sidebar { position: fixed !important; transform: translateX(-100%) !important; width: 240px; z-index: 200; }
       .sidebar.open { transform: translateX(0) !important; }
-      .main-content {
-        width: 100% !important;
-        min-width: 0;
-      }
-      .hamburger { display: flex !important; }
-      .page {
-      padding: 28px 32px;
-      flex: 1;
-      min-width: 0;
-      width: 100%;
-      box-sizing: border-box;
-      overflow-x: hidden;
-      animation: pageIn .2s ease;
-    }
-      .topbar {
-      height: 52px;
-      background: var(--bg-subtle);
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      padding: 0 24px;
-      gap: 12px;
-      position: sticky;
-      top: 0;
-      z-index: 50;
-      flex-shrink: 0;
-      width: 100%;
-    }
-      .stats-row { grid-template-columns: 1fr 1fr; gap: 10px; }
-      .grid-3 { grid-template-columns: 1fr 1fr; }
+      .ham { display: flex !important; }
+      .main { width: 100%; }
+      .page { padding: 16px; }
+      .kpi-grid { grid-template-columns: repeat(2,1fr); gap: 10px; }
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+      .fgrid { grid-template-columns: 1fr; }
       .grid-auto { grid-template-columns: 1fr; }
-      .field-grid { grid-template-columns: 1fr; }
-      .detail-panel { width: 100%; right: -100%; }
+      .detail { width: 100%; right: -100%; }
+      .topbar { padding: 0 16px; }
     }
     @media (max-width: 480px) {
-      .stats-row { grid-template-columns: 1fr 1fr; gap: 8px; }
-      .stat-card { padding: 14px; }
-      .stat-card .stat-value { font-size: 20px; }
-      .page-header { flex-direction: column; gap: 10px; }
+      .kpi-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+      .kpi { padding: 14px 16px; }
+      .kpi-value { font-size: 18px; }
+      .page-head { flex-direction: column; gap: 10px; }
       .grid-3 { grid-template-columns: 1fr; }
-      .topbar {
-      height: 52px;
-      background: var(--bg-subtle);
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      padding: 0 24px;
-      gap: 12px;
-      position: sticky;
-      top: 0;
-      z-index: 50;
-      flex-shrink: 0;
-      width: 100%;
-    }
-      .page {
-      padding: 28px 32px;
-      flex: 1;
-      min-width: 0;
-      width: 100%;
-      box-sizing: border-box;
-      overflow-x: hidden;
-      animation: pageIn .2s ease;
-    }
     }
   `}</style>
 );
 
+
 /* ─── HELPERS ───────────────────────────────────────────────────── */
-const AV_COLORS = ["orange","blue","green","purple","amber"];
+const AV_COLORS = ["or","bl","gr","pu","am"];
 const avColor = (id) => AV_COLORS[(id - 1) % AV_COLORS.length];
 const initials = (nom, prenom) => `${(prenom||"")[0]||""}${(nom||"")[0]||""}`.toUpperCase();
-const starsStr  = (n) => "★".repeat(Math.floor(n)) + "☆".repeat(5 - Math.floor(n));
-const formatFCFA = (n) => (n ?? 0).toLocaleString("fr-FR") + " FCFA";
+const starsStr = (n) => "★".repeat(Math.floor(n)) + "☆".repeat(5 - Math.floor(n));
+const formatFCFA = (n) => (n ?? 0).toLocaleString("fr-FR").replace(/\s/g, "\u202F") + " FCFA";
 const formatDate = (d) => d ? new Date(d + "T00:00:00").toLocaleDateString("fr-FR", { day:"numeric", month:"short", year:"numeric" }) : "—";
 const todayStr   = () => new Date().toISOString().slice(0, 10);
 
-function Badge({ v }) {
+function Tag({ v }) {
   const map = {
     Actif:"green", Diplômé:"blue", Suspendu:"red", Congé:"amber", Inactif:"red",
-    Confirmée:"green", "En attente":"amber", Annulée:"red", Terminée:"blue",
-    Payé:"green", Réussi:"green", Échoué:"red",
-    Disponible:"green", "En service":"blue", Maintenance:"amber", "Hors service":"red",
+    Confirmée:"green","En attente":"amber",Annulée:"red",Terminée:"blue",
+    Payé:"green",Réussi:"green",Échoué:"red",
+    Disponible:"green","En service":"blue",Maintenance:"amber","Hors service":"red",
   };
-  return <span className={`badge badge-${map[v]||"blue"}`}>{v}</span>;
+  return <span className={`tag tag-${map[v]||"blue"}`}>{v}</span>;
 }
 
-function Avatar({ nom, prenom, id, large }) {
+function Av({ nom, prenom, id, lg }) {
   const c = avColor(id || 1);
-  return <div className={`avatar ${large?"avatar-lg":""} av-${c}`}>{initials(nom,prenom)}</div>;
+  return <div className={`av${lg?" av-lg":""} av-${c}`}>{initials(nom,prenom)}</div>;
 }
 
 function Modal({ title, onClose, footer, children, wide }) {
   return (
-    <div className="modal-backdrop" onClick={e => e.target===e.currentTarget && onClose()}>
+    <div className="modal-bg" onClick={e => e.target===e.currentTarget && onClose()}>
       <div className={`modal${wide?" modal-wide":""}`}>
         <div className="modal-head">
           <div className="modal-title">{title}</div>
-          <button className="modal-close" onClick={onClose}>×</button>
+          <button className="modal-x" onClick={onClose}>×</button>
         </div>
         <div className="modal-body">{children}</div>
-        {footer && <div className="modal-footer">{footer}</div>}
+        {footer && <div className="modal-foot">{footer}</div>}
       </div>
     </div>
   );
@@ -1216,12 +663,11 @@ function useToast() {
 }
 
 function Toasts({ items }) {
-  const icons = { success:"✓", error:"✕", info:"·" };
   return (
-    <div className="toast-stack">
+    <div className="toasts">
       {items.map(t => (
-        <div key={t.id} className={`toast toast-${t.type}`}>
-          <span>{icons[t.type]}</span> {t.msg}
+        <div key={t.id} className={`toast ${t.type==="success"?"t-ok":t.type==="error"?"t-err":"t-inf"}`}>
+          <span>{t.type==="success"?"✓":t.type==="error"?"✕":"·"}</span> {t.msg}
         </div>
       ))}
     </div>
@@ -1247,10 +693,10 @@ function Dashboard({ data, setPage, toast }) {
 
   return (
     <div>
-      <div className="page-header">
+      <div className="page-head">
         <div>
           <div className="page-title">Vue d'ensemble</div>
-          <div className="page-subtitle">Auto-École Excellence · {new Date().toLocaleDateString("fr-FR", { weekday:"long", day:"numeric", month:"long", year:"numeric" })}</div>
+          <div className="page-sub">Auto-École Excellence · {new Date().toLocaleDateString("fr-FR", { weekday:"long", day:"numeric", month:"long", year:"numeric" })}</div>
         </div>
         <div className="page-actions">
           <button className="btn btn-ghost btn-sm" onClick={() => { downloadFile(exportSQL(), "autoges.sql"); toast("Export SQL téléchargé","info"); }}>Exporter SQL</button>
@@ -1260,14 +706,14 @@ function Dashboard({ data, setPage, toast }) {
       </div>
 
       {impay.length > 0 && (
-        <div className="alert alert-warning">
+        <div className="alert alert-warn">
           <span>⚠</span>
           <span>{impay.length} paiement{impay.length > 1 ? "s" : ""} en attente — {formatFCFA(impay.reduce((s,p)=>s+p.montant,0))} à régulariser</span>
           <button className="btn btn-ghost btn-sm ml-auto" onClick={() => setPage("pa")}>Voir →</button>
         </div>
       )}
 
-      <div className="stats-row">
+      <div className="kpi-grid">
         {[
           { c:"s-orange", ic:"si-orange", emoji:"👤", v:actifs,       l:"Élèves actifs",      ch:"+8%", up:true  },
           { c:"s-green",  ic:"si-green",  emoji:"✓",  v:`${tr}%`,    l:"Taux de réussite",   ch:"+3%", up:true  },
@@ -1275,8 +721,8 @@ function Dashboard({ data, setPage, toast }) {
           { c:"s-purple", ic:"si-purple", emoji:"◎",  v:formatFCFA(ca), l:"Chiffre d'affaires", ch:"+15%", up:true },
         ].map((s, i) => (
           <div className={`stat-card ${s.c}`} key={i}>
-            <div className="stat-label">{s.l}</div>
-            <div className="stat-value text-mono">{s.v}</div>
+            <div className="kpi-label">{s.l}</div>
+            <div className="kpi-value">{s.v}</div>
             <div className={`stat-change ${s.up ? "up" : "dn"}`}>
               {s.up ? "↑" : "↓"} {s.ch} ce mois
             </div>
@@ -1287,19 +733,19 @@ function Dashboard({ data, setPage, toast }) {
       <div className="grid-2 mb-16">
         {/* Activité */}
         <div className="card">
-          <div className="card-header">
+          <div className="card-head">
             <div className="card-title">Activité</div>
-            <span className="badge badge-green">En direct</span>
+            <span className="tag tag-green">En direct</span>
           </div>
           <div className="card-body" style={{paddingTop:12, paddingBottom:12}}>
-            <div className="timeline">
+            <div className="tl">
               {acts.map((a, i) => (
-                <div className="tl-item" key={i}>
+                <div className="tl-row" key={i}>
                   <div className="tl-dot" style={{background: a.bg}}>
-                    <span style={{fontSize:10, color:"var(--text-secondary)"}}>●</span>
+                    <span style={{fontSize:10, color:"var(--t2)"}}>●</span>
                   </div>
                   <div>
-                    <div className="tl-title">{a.title}</div>
+                    <div className="tl-main">{a.title}</div>
                     <div className="tl-sub">{a.sub} · {a.time}</div>
                   </div>
                 </div>
@@ -1310,20 +756,20 @@ function Dashboard({ data, setPage, toast }) {
 
         {/* Top élèves */}
         <div className="card">
-          <div className="card-header">
+          <div className="card-head">
             <div className="card-title">Meilleure progression</div>
-            <span className="text-muted">Ce mois</span>
+            <span className="t-mut">Ce mois</span>
           </div>
           <div className="card-body" style={{paddingTop:8, paddingBottom:8}}>
             {top4.map((e, i) => (
-              <div className="top-item" key={e.id}>
+              <div className="top-row" key={e.id}>
                 <div className={`rank-badge rank-${i < 3 ? i+1 : "n"}`}>{i+1}</div>
-                <Avatar nom={e.nom} prenom={e.prenom} id={e.id}/>
+                <Av nom={e.nom} prenom={e.prenom} id={e.id}/>
                 <div style={{flex:1, minWidth:0}}>
                   <div className="fw-500" style={{fontSize:13}}>{e.prenom} {e.nom}</div>
                   <div style={{marginTop:4}}>
-                    <div className="progress">
-                      <div className="progress-fill pf-orange" style={{width:`${Math.round(e.heuresEffectuees/e.heuresTotal*100)}%`}}/>
+                    <div className="bar">
+                      <div className="bar-fill bf-or" style={{width:`${Math.round(e.heuresEffectuees/e.heuresTotal*100)}%`}}/>
                     </div>
                     <div className="text-muted mt-4">{e.heuresEffectuees}h / {e.heuresTotal}h</div>
                   </div>
@@ -1340,18 +786,18 @@ function Dashboard({ data, setPage, toast }) {
       <div className="grid-2">
         {/* Leçons du jour */}
         <div className="card">
-          <div className="card-header">
+          <div className="card-head">
             <div className="card-title">Leçons du jour</div>
-            <span className="badge badge-blue">{todayL.length} séances</span>
+            <span className="tag tag-blue">{todayL.length} séances</span>
           </div>
           {todayL.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-icon">◻</div>
-              <div className="empty-text">Aucune leçon aujourd'hui</div>
+            <div className="empty">
+              <div className="empty-ico">◻</div>
+              <div className="empty-txt">Aucune leçon aujourd'hui</div>
             </div>
           ) : (
-            <div className="table-wrap">
-              <table className="table">
+            <div className="t-wrap">
+              <table className="t">
                 <thead><tr><th>Élève</th><th>Heure</th><th>Type</th><th>Statut</th></tr></thead>
                 <tbody>
                   {todayL.slice(0,5).map(l => {
@@ -1359,14 +805,14 @@ function Dashboard({ data, setPage, toast }) {
                     return (
                       <tr key={l.id}>
                         <td>
-                          <div className="cell-person">
-                            <Avatar nom={e?.nom} prenom={e?.prenom} id={l.eleveId}/>
+                          <div className="cell-name">
+                            <Av nom={e?.nom} prenom={e?.prenom} id={l.eleveId}/>
                             <span className="fw-500 text-primary">{e?.prenom} {e?.nom}</span>
                           </div>
                         </td>
                         <td className="text-mono fw-600 text-accent">{l.heure}</td>
                         <td>{l.type}</td>
-                        <td><Badge v={l.statut}/></td>
+                        <td><Tag v={l.statut}/></td>
                       </tr>
                     );
                   })}
@@ -1378,7 +824,7 @@ function Dashboard({ data, setPage, toast }) {
 
         {/* Répartition */}
         <div className="card">
-          <div className="card-header"><div className="card-title">Répartition</div></div>
+          <div className="card-head"><div className="card-title">Répartition</div></div>
           <div className="card-body">
             {[
               { l:"Permis B — Voiture", c:eleves.filter(e=>e.permis==="B").length, t:eleves.length, p:"pf-orange" },
@@ -1388,10 +834,10 @@ function Dashboard({ data, setPage, toast }) {
             ].map((r, i) => (
               <div key={i} style={{marginBottom:16}}>
                 <div className="row-between mb-8">
-                  <span className="text-sm">{r.l}</span>
+                  <span className="t-sm">{r.l}</span>
                   <span className="text-mono fw-600" style={{fontSize:12}}>{r.c} / {r.t}</span>
                 </div>
-                <div className="progress">
+                <div className="bar">
                   <div className={`progress-fill ${r.p}`} style={{width:`${Math.round(r.c/Math.max(r.t,1)*100)}%`}}/>
                 </div>
               </div>
@@ -1431,10 +877,10 @@ function Eleves({ data, refresh, toast }) {
 
   return (
     <div>
-      <div className="page-header">
+      <div className="page-head">
         <div>
           <div className="page-title">Élèves</div>
-          <div className="page-subtitle">{eleves.length} inscrits · {eleves.filter(e=>e.statut==="Actif").length} actifs · {eleves.filter(e=>e.statut==="Diplômé").length} diplômés</div>
+          <div className="page-sub">{eleves.length} inscrits · {eleves.filter(e=>e.statut==="Actif").length} actifs · {eleves.filter(e=>e.statut==="Diplômé").length} diplômés</div>
         </div>
         <div className="page-actions">
           <button className="btn btn-ghost btn-sm" onClick={() => { downloadFile(exportCSV("eleves"),"eleves.csv","text/csv"); toast("Export CSV téléchargé","info"); }}>Exporter</button>
@@ -1443,8 +889,8 @@ function Eleves({ data, refresh, toast }) {
       </div>
 
       <div className="filter-bar">
-        <div className="search-box">
-          <span style={{color:"var(--text-placeholder)", fontSize:13}}>⌕</span>
+        <div className="search-input">
+          <span style={{color:"var(--t3)", fontSize:13}}>⌕</span>
           <input placeholder="Rechercher par nom, email, CNI…" value={search} onChange={e=>setSearch(e.target.value)}/>
         </div>
         {["Tous","Actif","Diplômé","Suspendu"].map(s => (
@@ -1455,10 +901,19 @@ function Eleves({ data, refresh, toast }) {
       </div>
 
       <div className="card">
-        <div className="table-wrap">
-          <table className="table">
+        <div className="t-wrap">
+          <table className="t">
             <thead>
-              <tr><th>Nom</th><th>Contact</th><th>Permis</th><th>Heures</th><th>Solde</th><th>Moniteur</th><th>Statut</th><th></th></tr>
+              <tr>
+                <th>Élève</th>
+                <th>Téléphone</th>
+                <th>Permis</th>
+                <th>Progression</th>
+                <th>Solde dû</th>
+                <th>Moniteur</th>
+                <th>Statut</th>
+                <th style={{width:90}}></th>
+              </tr>
             </thead>
             <tbody>
               {filtered.map(e => {
@@ -1466,40 +921,40 @@ function Eleves({ data, refresh, toast }) {
                 const pct = Math.round(e.heuresEffectuees / e.heuresTotal * 100);
                 return (
                   <tr key={e.id}>
-                    <td>
-                      <div className="cell-person" style={{cursor:"pointer"}} onClick={() => setDetail(e)}>
-                        <Avatar nom={e.nom} prenom={e.prenom} id={e.id}/>
-                        <div>
-                          <div className="fw-600 text-primary" style={{fontSize:13.5}}>{e.prenom} {e.nom}</div>
-                          <div className="text-sm">{e.email}</div>
+                    <td style={{minWidth:200}}>
+                      <div className="cell-name" style={{cursor:"pointer", gap:10}} onClick={() => setDetail(e)}>
+                        <Av nom={e.nom} prenom={e.prenom} id={e.id}/>
+                        <div style={{minWidth:0}}>
+                          <div className="fw-600 text-primary" style={{fontSize:13.5, whiteSpace:"nowrap"}}>{e.prenom} {e.nom}</div>
+                          <div className="t-sm" style={{overflow:"hidden", textOverflow:"ellipsis", maxWidth:160}}>{e.email}</div>
                         </div>
                       </div>
                     </td>
-                    <td>{e.telephone}</td>
+                    <td style={{fontFamily:"'Geist Mono',monospace", fontSize:12.5}}>{e.telephone}</td>
                     <td><span className={`badge badge-${e.permis==="B"?"orange":"blue"}`}>Permis {e.permis}</span></td>
-                    <td style={{minWidth:130}}>
-                      <div className="row gap-8">
-                        <div className="progress" style={{flex:1}}>
-                          <div className="progress-fill pf-orange" style={{width:`${pct}%`}}/>
+                    <td style={{minWidth:160}}>
+                      <div style={{display:"flex", alignItems:"center", gap:10}}>
+                        <div className="bar" style={{flex:1, minWidth:80}}>
+                          <div className="bar-fill bf-or" style={{width:`${pct}%`}}/>
                         </div>
-                        <span className="text-mono text-muted" style={{fontSize:11.5, flexShrink:0}}>{e.heuresEffectuees}/{e.heuresTotal}h</span>
+                        <span style={{fontSize:12, color:"var(--t3)", fontFamily:"'Geist Mono',monospace", whiteSpace:"nowrap", minWidth:52}}>{e.heuresEffectuees}/{e.heuresTotal}h</span>
                       </div>
                     </td>
-                    <td className="text-mono fw-600" style={{color: e.solde>0?"var(--red)":"var(--green)", fontSize:13}}>{formatFCFA(e.solde)}</td>
-                    <td>
+                    <td style={{fontFamily:"'Geist Mono',monospace", fontSize:13, fontWeight:600, color: e.solde>0?"var(--red)":"var(--green)", whiteSpace:"nowrap"}}>{e.solde>0 ? formatFCFA(e.solde) : "—"}</td>
+                    <td style={{minWidth:130}}>
                       {mon ? (
-                        <div className="cell-person">
-                          <Avatar nom={mon.nom} prenom={mon.prenom} id={mon.id}/>
-                          <span className="text-sm">{mon.prenom} {mon.nom}</span>
+                        <div style={{display:"flex", alignItems:"center", gap:8}}>
+                          <Av nom={mon.nom} prenom={mon.prenom} id={mon.id}/>
+                          <span style={{fontSize:12.5, whiteSpace:"nowrap"}}>{mon.prenom} {mon.nom}</span>
                         </div>
-                      ) : <span className="text-muted">—</span>}
+                      ) : <span style={{color:"var(--t3)"}}>—</span>}
                     </td>
-                    <td><Badge v={e.statut}/></td>
+                    <td><Tag v={e.statut}/></td>
                     <td>
-                      <div className="row gap-4">
-                        <button className="btn btn-ghost btn-sm" onClick={() => setDetail(e)}>↗</button>
-                        <button className="btn btn-ghost btn-sm" onClick={() => openForm(e)}>✎</button>
-                        <button className="btn btn-danger btn-sm" onClick={() => del(e.id)}>✕</button>
+                      <div style={{display:"flex", gap:4}}>
+                        <button className="btn btn-ghost btn-sm" onClick={() => setDetail(e)} title="Voir détails">↗</button>
+                        <button className="btn btn-ghost btn-sm" onClick={() => openForm(e)} title="Modifier">✎</button>
+                        <button className="btn btn-danger btn-sm" onClick={() => del(e.id)} title="Supprimer">✕</button>
                       </div>
                     </td>
                   </tr>
@@ -1509,9 +964,9 @@ function Eleves({ data, refresh, toast }) {
           </table>
         </div>
         {filtered.length === 0 && (
-          <div className="empty-state">
-            <div className="empty-icon">◻</div>
-            <div className="empty-text">Aucun élève trouvé</div>
+          <div className="empty">
+            <div className="empty-ico">◻</div>
+            <div className="empty-txt">Aucun élève trouvé</div>
             <div className="empty-sub">Modifiez vos filtres ou inscrivez un nouvel élève</div>
           </div>
         )}
@@ -1519,53 +974,53 @@ function Eleves({ data, refresh, toast }) {
 
       {/* Panneau détail */}
       {detail && (
-        <div className={`detail-panel open`}>
+        <div className="detail open">
           <div className="detail-head">
-            <div className="fw-600" style={{fontSize:14}}>Fiche élève</div>
+            <div className="f600" style={{fontSize:14}}>Fiche élève</div>
             <button className="modal-close" onClick={() => setDetail(null)}>×</button>
           </div>
           <div className="detail-body">
             <div className="row gap-12 mb-12">
-              <Avatar nom={detail.nom} prenom={detail.prenom} id={detail.id} large/>
+              <Av nom={detail.nom} prenom={detail.prenom} id={detail.id} lg/>
               <div>
                 <div className="fw-600 text-primary" style={{fontSize:16, letterSpacing:"-0.02em"}}>{detail.prenom} {detail.nom}</div>
                 <div className="text-sm mt-4">{detail.email}</div>
                 <div className="row gap-4 mt-8">
-                  <Badge v={detail.statut}/>
+                  <Tag v={detail.statut}/>
                   <span className={`badge badge-${detail.permis==="B"?"orange":"blue"}`}>Permis {detail.permis}</span>
                 </div>
               </div>
             </div>
-            <div className="divider"/>
+            <div className="div"/>
             <div style={{marginBottom:14}}>
               <div className="row-between mb-8">
-                <span className="text-sm">Progression formation</span>
+                <span className="t-sm">Progression formation</span>
                 <span className="text-mono fw-600 text-accent" style={{fontSize:13}}>{Math.round(detail.heuresEffectuees/detail.heuresTotal*100)}%</span>
               </div>
-              <div className="progress" style={{height:6}}>
-                <div className="progress-fill pf-orange" style={{width:`${Math.round(detail.heuresEffectuees/detail.heuresTotal*100)}%`}}/>
+              <div className="bar" style={{height:6}}>
+                <div className="bar-fill bf-or" style={{width:`${Math.round(detail.heuresEffectuees/detail.heuresTotal*100)}%`}}/>
               </div>
               <div className="row-between mt-4">
-                <span className="text-muted">{detail.heuresEffectuees}h effectuées</span>
-                <span className="text-muted">{detail.heuresTotal - detail.heuresEffectuees}h restantes</span>
+                <span className="t-mut">{detail.heuresEffectuees}h effectuées</span>
+                <span className="t-mut">{detail.heuresTotal - detail.heuresEffectuees}h restantes</span>
               </div>
             </div>
-            <div className="divider"/>
-            <div className="info-grid">
-              <span className="info-key">Téléphone</span><span className="info-val">{detail.telephone}</span>
-              <span className="info-key">Naissance</span><span className="info-val">{formatDate(detail.dateNaissance)}</span>
-              <span className="info-key">Lieu</span><span className="info-val">{detail.lieuNaissance}</span>
-              <span className="info-key">CNI</span><span className="info-val text-mono">{detail.cni}</span>
-              <span className="info-key">Inscription</span><span className="info-val">{formatDate(detail.dateInscription)}</span>
-              <span className="info-key">Solde</span>
+            <div className="div"/>
+            <div className="info-g">
+              <span className="ik">Téléphone</span><span className="iv">{detail.telephone}</span>
+              <span className="ik">Naissance</span><span className="iv">{formatDate(detail.dateNaissance)}</span>
+              <span className="ik">Lieu</span><span className="iv">{detail.lieuNaissance}</span>
+              <span className="ik">CNI</span><span className="info-val text-mono">{detail.cni}</span>
+              <span className="ik">Inscription</span><span className="iv">{formatDate(detail.dateInscription)}</span>
+              <span className="ik">Solde</span>
               <span className="info-val fw-600" style={{color:detail.solde>0?"var(--red)":"var(--green)"}}>{formatFCFA(detail.solde)}</span>
             </div>
             {detail.notes && <>
-              <div className="divider"/>
+              <div className="div"/>
               <div className="text-sm fw-600 mb-8">Notes</div>
-              <div style={{fontSize:13, color:"var(--text-secondary)", background:"var(--bg-muted)", borderRadius:"var(--r-sm)", padding:"10px 12px", lineHeight:1.5}}>{detail.notes}</div>
+              <div style={{fontSize:13, color:"var(--t2)", background:"var(--bg-muted)", borderRadius:"var(--r2)", padding:"10px 12px", lineHeight:1.5}}>{detail.notes}</div>
             </>}
-            <div className="divider"/>
+            <div className="div"/>
             <div className="row gap-8">
               <button className="btn btn-primary btn-sm" style={{flex:1}} onClick={() => { openForm(detail); setDetail(null); }}>Modifier</button>
               <button className="btn btn-danger btn-sm" onClick={() => { del(detail.id); setDetail(null); }}>Supprimer</button>
@@ -1577,39 +1032,39 @@ function Eleves({ data, refresh, toast }) {
       {modal && (
         <Modal title={sel?"Modifier l'élève":"Inscrire un élève"} onClose={() => setModal(false)} wide
           footer={<><button className="btn btn-ghost" onClick={() => setModal(false)}>Annuler</button><button className="btn btn-primary" onClick={save}>Enregistrer</button></>}>
-          <div className="field-grid">
-            <div className="field"><label className="field-label">Prénom *</label><input className="field-input" value={form.prenom} onChange={e=>setForm({...form,prenom:e.target.value})} placeholder="Prénom"/></div>
-            <div className="field"><label className="field-label">Nom *</label><input className="field-input" value={form.nom} onChange={e=>setForm({...form,nom:e.target.value})} placeholder="Nom de famille"/></div>
+          <div className="fgrid">
+            <div className="field"><label className="field-lbl">Prénom *</label><input className="field-inp" value={form.prenom} onChange={e=>setForm({...form,prenom:e.target.value})} placeholder="Prénom"/></div>
+            <div className="field"><label className="field-lbl">Nom *</label><input className="field-inp" value={form.nom} onChange={e=>setForm({...form,nom:e.target.value})} placeholder="Nom de famille"/></div>
           </div>
-          <div className="field-grid">
-            <div className="field"><label className="field-label">Email</label><input className="field-input" type="email" value={form.email} onChange={e=>setForm({...form,email:e.target.value})} placeholder="email@exemple.com"/></div>
-            <div className="field"><label className="field-label">Téléphone</label><input className="field-input" value={form.telephone} onChange={e=>setForm({...form,telephone:e.target.value})} placeholder="6XX XXX XXX"/></div>
+          <div className="fgrid">
+            <div className="field"><label className="field-lbl">Email</label><input className="field-inp" type="email" value={form.email} onChange={e=>setForm({...form,email:e.target.value})} placeholder="email@exemple.com"/></div>
+            <div className="field"><label className="field-lbl">Téléphone</label><input className="field-inp" value={form.telephone} onChange={e=>setForm({...form,telephone:e.target.value})} placeholder="6XX XXX XXX"/></div>
           </div>
-          <div className="field-grid">
-            <div className="field"><label className="field-label">Date de naissance</label><input className="field-input" type="date" value={form.dateNaissance} onChange={e=>setForm({...form,dateNaissance:e.target.value})}/></div>
-            <div className="field"><label className="field-label">Lieu de naissance</label><input className="field-input" value={form.lieuNaissance} onChange={e=>setForm({...form,lieuNaissance:e.target.value})} placeholder="Ville"/></div>
+          <div className="fgrid">
+            <div className="field"><label className="field-lbl">Date de naissance</label><input className="field-inp" type="date" value={form.dateNaissance} onChange={e=>setForm({...form,dateNaissance:e.target.value})}/></div>
+            <div className="field"><label className="field-lbl">Lieu de naissance</label><input className="field-inp" value={form.lieuNaissance} onChange={e=>setForm({...form,lieuNaissance:e.target.value})} placeholder="Ville"/></div>
           </div>
-          <div className="field-grid">
-            <div className="field"><label className="field-label">N° Pièce d'identité</label><input className="field-input" value={form.cni} onChange={e=>setForm({...form,cni:e.target.value})} placeholder="CNI / Passeport"/></div>
-            <div className="field"><label className="field-label">Permis visé</label>
-              <select className="field-input" value={form.permis} onChange={e=>setForm({...form,permis:e.target.value})}><option>B</option><option>A</option><option>C</option></select>
+          <div className="fgrid">
+            <div className="field"><label className="field-lbl">N° Pièce d'identité</label><input className="field-inp" value={form.cni} onChange={e=>setForm({...form,cni:e.target.value})} placeholder="CNI / Passeport"/></div>
+            <div className="field"><label className="field-lbl">Permis visé</label>
+              <select className="field-inp" value={form.permis} onChange={e=>setForm({...form,permis:e.target.value})}><option>B</option><option>A</option><option>C</option></select>
             </div>
           </div>
-          <div className="field-grid">
-            <div className="field"><label className="field-label">Moniteur assigné</label>
-              <select className="field-input" value={form.moniteurId} onChange={e=>setForm({...form,moniteurId:+e.target.value})}>
+          <div className="fgrid">
+            <div className="field"><label className="field-lbl">Moniteur assigné</label>
+              <select className="field-inp" value={form.moniteurId} onChange={e=>setForm({...form,moniteurId:+e.target.value})}>
                 {moniteurs.map(m=><option key={m.id} value={m.id}>{m.prenom} {m.nom}</option>)}
               </select>
             </div>
-            <div className="field"><label className="field-label">Statut</label>
-              <select className="field-input" value={form.statut} onChange={e=>setForm({...form,statut:e.target.value})}><option>Actif</option><option>Diplômé</option><option>Suspendu</option></select>
+            <div className="field"><label className="field-lbl">Statut</label>
+              <select className="field-inp" value={form.statut} onChange={e=>setForm({...form,statut:e.target.value})}><option>Actif</option><option>Diplômé</option><option>Suspendu</option></select>
             </div>
           </div>
-          <div className="field-grid">
-            <div className="field"><label className="field-label">Heures effectuées</label><input className="field-input" type="number" min="0" value={form.heuresEffectuees} onChange={e=>setForm({...form,heuresEffectuees:+e.target.value})}/></div>
-            <div className="field"><label className="field-label">Solde impayé (FCFA)</label><input className="field-input" type="number" min="0" value={form.solde} onChange={e=>setForm({...form,solde:+e.target.value})}/></div>
+          <div className="fgrid">
+            <div className="field"><label className="field-lbl">Heures effectuées</label><input className="field-inp" type="number" min="0" value={form.heuresEffectuees} onChange={e=>setForm({...form,heuresEffectuees:+e.target.value})}/></div>
+            <div className="field"><label className="field-lbl">Solde impayé (FCFA)</label><input className="field-inp" type="number" min="0" value={form.solde} onChange={e=>setForm({...form,solde:+e.target.value})}/></div>
           </div>
-          <div className="field"><label className="field-label">Notes internes</label><textarea className="field-input" value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} placeholder="Observations, remarques…"/></div>
+          <div className="field"><label className="field-lbl">Notes internes</label><textarea className="field-inp" value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} placeholder="Observations, remarques…"/></div>
         </Modal>
       )}
     </div>
@@ -1634,10 +1089,10 @@ function Moniteurs({ data, refresh, toast }) {
 
   return (
     <div>
-      <div className="page-header">
+      <div className="page-head">
         <div>
           <div className="page-title">Moniteurs</div>
-          <div className="page-subtitle">{moniteurs.length} moniteurs · {moniteurs.filter(m=>m.statut==="Actif").length} disponibles</div>
+          <div className="page-sub">{moniteurs.length} moniteurs · {moniteurs.filter(m=>m.statut==="Actif").length} disponibles</div>
         </div>
         <button className="btn btn-primary" onClick={() => openForm()}>+ Ajouter un moniteur</button>
       </div>
@@ -1645,29 +1100,29 @@ function Moniteurs({ data, refresh, toast }) {
         {moniteurs.map(m => {
           const nb = eleves.filter(e=>e.moniteurId===m.id).length;
           return (
-            <div className="monitor-card" key={m.id}>
-              <div className="monitor-head">
-                <Avatar nom={m.nom} prenom={m.prenom} id={m.id} large/>
+            <div className="m-card" key={m.id}>
+              <div className="m-head">
+                <Av nom={m.nom} prenom={m.prenom} id={m.id} lg/>
                 <div style={{flex:1}}>
-                  <div className="monitor-name">{m.prenom} {m.nom}</div>
-                  <div className="monitor-role">{m.specialite}</div>
-                  <div className="stars mt-4">{starsStr(m.noteMoyenne)} <span className="text-muted" style={{letterSpacing:0}}>{m.noteMoyenne}</span></div>
+                  <div className="m-name">{m.prenom} {m.nom}</div>
+                  <div className="m-role">{m.specialite}</div>
+                  <div className="stars mt-4">{starsStr(m.noteMoyenne)} <span className="t-mut" style={{letterSpacing:0}}>{m.noteMoyenne}</span></div>
                 </div>
-                <Badge v={m.statut}/>
+                <Tag v={m.statut}/>
               </div>
-              <div className="divider"/>
-              <div className="monitor-meta">
-                <span className="meta-key">Email</span><span className="meta-val">{m.email}</span>
-                <span className="meta-key">Téléphone</span><span className="meta-val">{m.telephone}</span>
-                <span className="meta-key">Expérience</span><span className="meta-val">{m.experience}</span>
-                <span className="meta-key">Salaire</span><span className="meta-val text-accent">{formatFCFA(m.salaire)}</span>
+              <div className="div"/>
+              <div className="m-meta">
+                <span className="mk">Email</span><span className="mv">{m.email}</span>
+                <span className="mk">Téléphone</span><span className="mv">{m.telephone}</span>
+                <span className="mk">Expérience</span><span className="mv">{m.experience}</span>
+                <span className="mk">Salaire</span><span className="meta-val text-accent">{formatFCFA(m.salaire)}</span>
               </div>
-              <div className="monitor-stats">
+              <div className="m-stats">
                 <div className="mstat"><div className="mstat-v text-mono" style={{color:"var(--accent)"}}>{nb}</div><div className="mstat-l">Élèves</div></div>
                 <div className="mstat"><div className="mstat-v text-mono" style={{color:"var(--green)"}}>{m.noteMoyenne}</div><div className="mstat-l">Note</div></div>
                 <div className="mstat"><div className="mstat-v" style={{color:"var(--blue)",fontSize:12}}>{m.experience}</div><div className="mstat-l">Exp.</div></div>
               </div>
-              <div className="divider"/>
+              <div className="div"/>
               <div className="row gap-8">
                 <button className="btn btn-ghost btn-sm" style={{flex:1}} onClick={() => openForm(m)}>Modifier</button>
                 <button className="btn btn-danger btn-sm" onClick={() => del(m.id)}>✕</button>
@@ -1679,29 +1134,29 @@ function Moniteurs({ data, refresh, toast }) {
       {modal && (
         <Modal title={sel?"Modifier le moniteur":"Nouveau moniteur"} onClose={() => setModal(false)} wide
           footer={<><button className="btn btn-ghost" onClick={() => setModal(false)}>Annuler</button><button className="btn btn-primary" onClick={save}>Enregistrer</button></>}>
-          <div className="field-grid">
-            <div className="field"><label className="field-label">Prénom *</label><input className="field-input" value={form.prenom} onChange={e=>setForm({...form,prenom:e.target.value})}/></div>
-            <div className="field"><label className="field-label">Nom *</label><input className="field-input" value={form.nom} onChange={e=>setForm({...form,nom:e.target.value})}/></div>
+          <div className="fgrid">
+            <div className="field"><label className="field-lbl">Prénom *</label><input className="field-inp" value={form.prenom} onChange={e=>setForm({...form,prenom:e.target.value})}/></div>
+            <div className="field"><label className="field-lbl">Nom *</label><input className="field-inp" value={form.nom} onChange={e=>setForm({...form,nom:e.target.value})}/></div>
           </div>
-          <div className="field"><label className="field-label">Email</label><input className="field-input" type="email" value={form.email} onChange={e=>setForm({...form,email:e.target.value})}/></div>
-          <div className="field-grid">
-            <div className="field"><label className="field-label">Téléphone</label><input className="field-input" value={form.telephone} onChange={e=>setForm({...form,telephone:e.target.value})}/></div>
-            <div className="field"><label className="field-label">Spécialité</label>
-              <select className="field-input" value={form.specialite} onChange={e=>setForm({...form,specialite:e.target.value})}><option>Permis B</option><option>Permis A</option><option>Permis B/A</option><option>Permis C</option></select>
+          <div className="field"><label className="field-lbl">Email</label><input className="field-inp" type="email" value={form.email} onChange={e=>setForm({...form,email:e.target.value})}/></div>
+          <div className="fgrid">
+            <div className="field"><label className="field-lbl">Téléphone</label><input className="field-inp" value={form.telephone} onChange={e=>setForm({...form,telephone:e.target.value})}/></div>
+            <div className="field"><label className="field-lbl">Spécialité</label>
+              <select className="field-inp" value={form.specialite} onChange={e=>setForm({...form,specialite:e.target.value})}><option>Permis B</option><option>Permis A</option><option>Permis B/A</option><option>Permis C</option></select>
             </div>
           </div>
-          <div className="field-grid">
-            <div className="field"><label className="field-label">Salaire (FCFA)</label><input className="field-input" type="number" value={form.salaire} onChange={e=>setForm({...form,salaire:+e.target.value})}/></div>
-            <div className="field"><label className="field-label">Expérience</label><input className="field-input" value={form.experience} onChange={e=>setForm({...form,experience:e.target.value})} placeholder="Ex: 3 ans"/></div>
+          <div className="fgrid">
+            <div className="field"><label className="field-lbl">Salaire (FCFA)</label><input className="field-inp" type="number" value={form.salaire} onChange={e=>setForm({...form,salaire:+e.target.value})}/></div>
+            <div className="field"><label className="field-lbl">Expérience</label><input className="field-inp" value={form.experience} onChange={e=>setForm({...form,experience:e.target.value})} placeholder="Ex: 3 ans"/></div>
           </div>
-          <div className="field-grid">
-            <div className="field"><label className="field-label">Statut</label>
-              <select className="field-input" value={form.statut} onChange={e=>setForm({...form,statut:e.target.value})}><option>Actif</option><option>Congé</option><option>Inactif</option></select>
+          <div className="fgrid">
+            <div className="field"><label className="field-lbl">Statut</label>
+              <select className="field-inp" value={form.statut} onChange={e=>setForm({...form,statut:e.target.value})}><option>Actif</option><option>Congé</option><option>Inactif</option></select>
             </div>
-            <div className="field"><label className="field-label">Date d'embauche</label><input className="field-input" type="date" value={form.dateEmbauche} onChange={e=>setForm({...form,dateEmbauche:e.target.value})}/></div>
+            <div className="field"><label className="field-lbl">Date d'embauche</label><input className="field-inp" type="date" value={form.dateEmbauche} onChange={e=>setForm({...form,dateEmbauche:e.target.value})}/></div>
           </div>
-          <div className="field"><label className="field-label">Adresse</label><input className="field-input" value={form.adresse} onChange={e=>setForm({...form,adresse:e.target.value})}/></div>
-          <div className="field"><label className="field-label">Notes</label><textarea className="field-input" value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} placeholder="Observations…"/></div>
+          <div className="field"><label className="field-lbl">Adresse</label><input className="field-inp" value={form.adresse} onChange={e=>setForm({...form,adresse:e.target.value})}/></div>
+          <div className="field"><label className="field-lbl">Notes</label><textarea className="field-inp" value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} placeholder="Observations…"/></div>
         </Modal>
       )}
     </div>
@@ -1732,10 +1187,10 @@ function Planning({ data, refresh, toast }) {
 
   return (
     <div>
-      <div className="page-header">
+      <div className="page-head">
         <div>
           <div className="page-title">Planning</div>
-          <div className="page-subtitle">{lecons.length} leçons · {lecons.filter(l=>l.statut==="En attente").length} en attente de confirmation</div>
+          <div className="page-sub">{lecons.length} leçons · {lecons.filter(l=>l.statut==="En attente").length} en attente de confirmation</div>
         </div>
         <button className="btn btn-primary" onClick={() => { setForm(blank); setModal(true); }}>+ Planifier une leçon</button>
       </div>
@@ -1743,7 +1198,7 @@ function Planning({ data, refresh, toast }) {
         {["Tous","Conduite","Code","Confirmée","En attente","Annulée","Terminée"].map(f => (
           <button key={f} className={`btn btn-sm ${filter===f?"btn-primary":"btn-ghost"}`} onClick={() => setFilter(f)}>{f}</button>
         ))}
-        <input className="field-input" type="date" value={dateFilter} onChange={e => setDateFilter(e.target.value)} style={{width:160, padding:"6px 10px"}}/>
+        <input className="field-inp" type="date" value={dateFilter} onChange={e => setDateFilter(e.target.value)} style={{width:160, padding:"6px 10px"}}/>
         {dateFilter && <button className="btn btn-ghost btn-sm" onClick={() => setDateFilter("")}>✕ Date</button>}
       </div>
       <div style={{display:"flex", flexDirection:"column", gap:8}}>
@@ -1757,20 +1212,20 @@ function Planning({ data, refresh, toast }) {
                 <div style={{display:"flex", alignItems:"center", gap:14, padding:"13px 18px", flex:1, flexWrap:"wrap"}}>
                   <div style={{minWidth:54, textAlign:"center", flexShrink:0}}>
                     <div className="text-mono fw-600 text-accent" style={{fontSize:17}}>{l.heure}</div>
-                    <div className="text-muted" style={{fontSize:11}}>{l.duree}h · {formatDate(l.date)}</div>
+                    <div className="t-mut" style={{fontSize:11}}>{l.duree}h · {formatDate(l.date)}</div>
                   </div>
                   <div style={{width:1, height:34, background:"var(--border)", flexShrink:0}}/>
-                  <div className="cell-person" style={{flex:1, minWidth:140}}>
-                    <Avatar nom={e?.nom} prenom={e?.prenom} id={l.eleveId}/>
+                  <div className="cell-name" style={{flex:1, minWidth:140}}>
+                    <Av nom={e?.nom} prenom={e?.prenom} id={l.eleveId}/>
                     <div>
-                      <div className="fw-600" style={{fontSize:13.5}}>{e?.prenom} {e?.nom}</div>
-                      <div className="text-sm">avec {m?.prenom} {m?.nom}</div>
+                      <div className="f600" style={{fontSize:13.5}}>{e?.prenom} {e?.nom}</div>
+                      <div className="t-sm">avec {m?.prenom} {m?.nom}</div>
                     </div>
                   </div>
                   <div className="row gap-8" style={{flexWrap:"wrap"}}>
                     <span className={`badge badge-${l.type==="Conduite"?"orange":"blue"}`}>{l.type}</span>
-                    <Badge v={l.statut}/>
-                    <span className="text-muted" style={{fontSize:12}}>🚗 {l.vehicule||"—"}</span>
+                    <Tag v={l.statut}/>
+                    <span className="t-mut" style={{fontSize:12}}>🚗 {l.vehicule||"—"}</span>
                   </div>
                   <div className="row gap-6" style={{marginLeft:"auto", flexWrap:"wrap"}}>
                     {l.statut==="En attente" && <button className="btn btn-success btn-sm" onClick={() => { update("lecons",l.id,{statut:"Confirmée"}); refresh(); toast("Leçon confirmée"); }}>Confirmer</button>}
@@ -1783,38 +1238,38 @@ function Planning({ data, refresh, toast }) {
             </div>
           );
         })}
-        {filtered.length===0 && <div className="empty-state"><div className="empty-icon">◻</div><div className="empty-text">Aucune leçon trouvée</div></div>}
+        {filtered.length===0 && <div className="empty"><div className="empty-ico">◻</div><div className="empty-txt">Aucune leçon trouvée</div></div>}
       </div>
       {modal && (
         <Modal title="Planifier une leçon" onClose={() => setModal(false)}
           footer={<><button className="btn btn-ghost" onClick={() => setModal(false)}>Annuler</button><button className="btn btn-primary" onClick={save}>Enregistrer</button></>}>
-          <div className="field-grid">
-            <div className="field"><label className="field-label">Élève</label>
-              <select className="field-input" value={form.eleveId} onChange={e=>setForm({...form,eleveId:+e.target.value})}>
+          <div className="fgrid">
+            <div className="field"><label className="field-lbl">Élève</label>
+              <select className="field-inp" value={form.eleveId} onChange={e=>setForm({...form,eleveId:+e.target.value})}>
                 {eleves.map(e=><option key={e.id} value={e.id}>{e.prenom} {e.nom}</option>)}
               </select>
             </div>
-            <div className="field"><label className="field-label">Moniteur</label>
-              <select className="field-input" value={form.moniteurId} onChange={e=>setForm({...form,moniteurId:+e.target.value})}>
+            <div className="field"><label className="field-lbl">Moniteur</label>
+              <select className="field-inp" value={form.moniteurId} onChange={e=>setForm({...form,moniteurId:+e.target.value})}>
                 {moniteurs.map(m=><option key={m.id} value={m.id}>{m.prenom} {m.nom}</option>)}
               </select>
             </div>
           </div>
-          <div className="field-grid">
-            <div className="field"><label className="field-label">Date</label><input className="field-input" type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})}/></div>
-            <div className="field"><label className="field-label">Heure</label><input className="field-input" type="time" value={form.heure} onChange={e=>setForm({...form,heure:e.target.value})}/></div>
+          <div className="fgrid">
+            <div className="field"><label className="field-lbl">Date</label><input className="field-inp" type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})}/></div>
+            <div className="field"><label className="field-lbl">Heure</label><input className="field-inp" type="time" value={form.heure} onChange={e=>setForm({...form,heure:e.target.value})}/></div>
           </div>
-          <div className="field-grid">
-            <div className="field"><label className="field-label">Type</label>
-              <select className="field-input" value={form.type} onChange={e=>setForm({...form,type:e.target.value})}><option>Conduite</option><option>Code</option></select>
+          <div className="fgrid">
+            <div className="field"><label className="field-lbl">Type</label>
+              <select className="field-inp" value={form.type} onChange={e=>setForm({...form,type:e.target.value})}><option>Conduite</option><option>Code</option></select>
             </div>
-            <div className="field"><label className="field-label">Durée</label>
-              <select className="field-input" value={form.duree} onChange={e=>setForm({...form,duree:+e.target.value})}><option value={1}>1h</option><option value={2}>2h</option><option value={3}>3h</option></select>
+            <div className="field"><label className="field-lbl">Durée</label>
+              <select className="field-inp" value={form.duree} onChange={e=>setForm({...form,duree:+e.target.value})}><option value={1}>1h</option><option value={2}>2h</option><option value={3}>3h</option></select>
             </div>
           </div>
-          <div className="field"><label className="field-label">Véhicule / Salle</label><input className="field-input" value={form.vehicule} onChange={e=>setForm({...form,vehicule:e.target.value})} placeholder="Ex: Toyota Corolla — LT 234 A"/></div>
-          <div className="field"><label className="field-label">Lieu</label><input className="field-input" value={form.lieu} onChange={e=>setForm({...form,lieu:e.target.value})} placeholder="Ex: Circuit Akwa"/></div>
-          <div className="field"><label className="field-label">Notes</label><textarea className="field-input" value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} placeholder="Observations…"/></div>
+          <div className="field"><label className="field-lbl">Véhicule / Salle</label><input className="field-inp" value={form.vehicule} onChange={e=>setForm({...form,vehicule:e.target.value})} placeholder="Ex: Toyota Corolla — LT 234 A"/></div>
+          <div className="field"><label className="field-lbl">Lieu</label><input className="field-inp" value={form.lieu} onChange={e=>setForm({...form,lieu:e.target.value})} placeholder="Ex: Circuit Akwa"/></div>
+          <div className="field"><label className="field-lbl">Notes</label><textarea className="field-inp" value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} placeholder="Observations…"/></div>
         </Modal>
       )}
     </div>
@@ -1838,38 +1293,38 @@ function Examens({ data, refresh, toast }) {
 
   return (
     <div>
-      <div className="page-header">
+      <div className="page-head">
         <div>
           <div className="page-title">Examens</div>
-          <div className="page-subtitle">Taux de réussite global : <strong style={{color:"var(--green)"}}>{tr}%</strong> sur {examens.length} examens</div>
+          <div className="page-sub">Taux de réussite global : <strong style={{color:"var(--green)"}}>{tr}%</strong> sur {examens.length} examens</div>
         </div>
         <button className="btn btn-primary" onClick={() => { setForm(blank); setModal(true); }}>+ Enregistrer un examen</button>
       </div>
       <div className="grid-3 mb-16">
         {[{l:"Total",v:examens.length,c:"blue"},{l:"Réussis",v:examens.filter(x=>x.statut==="Réussi").length,c:"green"},{l:"Échoués",v:examens.filter(x=>x.statut==="Échoué").length,c:"red"}].map((s,i)=>(
-          <div className="stat-card" key={i}>
-            <div className="stat-label">{s.l}</div>
-            <div className="stat-value text-mono" style={{color:`var(--${s.c})`}}>{s.v}</div>
+          <div className="kpi" key={i}>
+            <div className="kpi-label">{s.l}</div>
+            <div className="kpi-value" style={{color:`var(--${s.c})`}}>{s.v}</div>
           </div>
         ))}
       </div>
       <div className="card">
-        <div className="table-wrap">
-          <table className="table">
+        <div className="t-wrap">
+          <table className="t">
             <thead><tr><th>Élève</th><th>Type</th><th>Date</th><th>Score</th><th>Seuil</th><th>Centre</th><th>Résultat</th><th>Observations</th><th></th></tr></thead>
             <tbody>
               {examens.map(x => {
                 const e = eleves.find(el=>el.id===x.eleveId);
                 return (
                   <tr key={x.id}>
-                    <td><div className="cell-person"><Avatar nom={e?.nom} prenom={e?.prenom} id={x.eleveId}/><span className="fw-600 text-primary">{e?.prenom} {e?.nom}</span></div></td>
+                    <td><div className="cell-name"><Av nom={e?.nom} prenom={e?.prenom} id={x.eleveId}/><span className="fw-600 text-primary">{e?.prenom} {e?.nom}</span></div></td>
                     <td><span className={`badge badge-${x.type==="Code"?"blue":"orange"}`}>{x.type}</span></td>
                     <td>{formatDate(x.date)}</td>
                     <td><span className="text-mono fw-600" style={{fontSize:15,color:x.score>=x.seuil?"var(--green)":"var(--red)"}}>{x.score}</span></td>
                     <td className="text-muted text-mono">{x.seuil}</td>
                     <td>{x.centre}</td>
-                    <td><Badge v={x.statut}/></td>
-                    <td style={{maxWidth:160,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:"var(--text-muted)",fontSize:12}}>{x.observations||"—"}</td>
+                    <td><Tag v={x.statut}/></td>
+                    <td style={{maxWidth:160,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:"var(--t3)",fontSize:12}}>{x.observations||"—"}</td>
                     <td><button className="btn btn-danger btn-sm" onClick={() => { if(window.confirm("Supprimer ?")) { remove("examens",x.id); refresh(); toast("Supprimé","info"); } }}>✕</button></td>
                   </tr>
                 );
@@ -1877,28 +1332,28 @@ function Examens({ data, refresh, toast }) {
             </tbody>
           </table>
         </div>
-        {examens.length===0 && <div className="empty-state"><div className="empty-icon">◻</div><div className="empty-text">Aucun examen enregistré</div></div>}
+        {examens.length===0 && <div className="empty"><div className="empty-ico">◻</div><div className="empty-txt">Aucun examen enregistré</div></div>}
       </div>
       {modal && (
         <Modal title="Enregistrer un examen" onClose={() => setModal(false)}
           footer={<><button className="btn btn-ghost" onClick={() => setModal(false)}>Annuler</button><button className="btn btn-primary" onClick={save}>Enregistrer</button></>}>
-          <div className="field"><label className="field-label">Élève</label>
-            <select className="field-input" value={form.eleveId} onChange={e=>setForm({...form,eleveId:+e.target.value})}>
+          <div className="field"><label className="field-lbl">Élève</label>
+            <select className="field-inp" value={form.eleveId} onChange={e=>setForm({...form,eleveId:+e.target.value})}>
               {eleves.map(e=><option key={e.id} value={e.id}>{e.prenom} {e.nom}</option>)}
             </select>
           </div>
-          <div className="field-grid">
-            <div className="field"><label className="field-label">Type</label>
-              <select className="field-input" value={form.type} onChange={e=>setForm({...form,type:e.target.value,seuil:e.target.value==="Code"?35:70})}><option>Code</option><option>Conduite</option></select>
+          <div className="fgrid">
+            <div className="field"><label className="field-lbl">Type</label>
+              <select className="field-inp" value={form.type} onChange={e=>setForm({...form,type:e.target.value,seuil:e.target.value==="Code"?35:70})}><option>Code</option><option>Conduite</option></select>
             </div>
-            <div className="field"><label className="field-label">Date</label><input className="field-input" type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})}/></div>
+            <div className="field"><label className="field-lbl">Date</label><input className="field-inp" type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})}/></div>
           </div>
-          <div className="field-grid">
-            <div className="field"><label className="field-label">Score obtenu</label><input className="field-input" type="number" min="0" value={form.score} onChange={e=>setForm({...form,score:e.target.value})} placeholder={`Sur ${form.type==="Code"?40:100}`}/></div>
-            <div className="field"><label className="field-label">Seuil de réussite</label><input className="field-input" type="number" value={form.seuil} onChange={e=>setForm({...form,seuil:e.target.value})}/></div>
+          <div className="fgrid">
+            <div className="field"><label className="field-lbl">Score obtenu</label><input className="field-inp" type="number" min="0" value={form.score} onChange={e=>setForm({...form,score:e.target.value})} placeholder={`Sur ${form.type==="Code"?40:100}`}/></div>
+            <div className="field"><label className="field-lbl">Seuil de réussite</label><input className="field-inp" type="number" value={form.seuil} onChange={e=>setForm({...form,seuil:e.target.value})}/></div>
           </div>
-          <div className="field"><label className="field-label">Centre d'examen</label><input className="field-input" value={form.centre} onChange={e=>setForm({...form,centre:e.target.value})}/></div>
-          <div className="field"><label className="field-label">Observations</label><textarea className="field-input" value={form.observations} onChange={e=>setForm({...form,observations:e.target.value})} placeholder="Notes post-examen…"/></div>
+          <div className="field"><label className="field-lbl">Centre d'examen</label><input className="field-inp" value={form.centre} onChange={e=>setForm({...form,centre:e.target.value})}/></div>
+          <div className="field"><label className="field-lbl">Observations</label><textarea className="field-inp" value={form.observations} onChange={e=>setForm({...form,observations:e.target.value})} placeholder="Notes post-examen…"/></div>
           {+form.score > 0 && (
             <div className={`alert alert-${+form.score>=+form.seuil?"":"danger"}`} style={{background:+form.score>=+form.seuil?"var(--green-dim)":"var(--red-dim)", borderColor:+form.score>=+form.seuil?"rgba(63,185,132,.25)":"rgba(224,92,92,.25)", color:+form.score>=+form.seuil?"var(--green)":"var(--red)"}}>
               {+form.score>=+form.seuil ? "✓ Résultat estimé : RÉUSSI" : "✕ Résultat estimé : ÉCHOUÉ"}
@@ -1932,10 +1387,10 @@ function Paiements({ data, refresh, toast }) {
 
   return (
     <div>
-      <div className="page-header">
+      <div className="page-head">
         <div>
           <div className="page-title">Paiements</div>
-          <div className="page-subtitle">{paiements.length} transactions · {paiements.filter(p=>p.statut==="Payé").length} validés</div>
+          <div className="page-sub">{paiements.length} transactions · {paiements.filter(p=>p.statut==="Payé").length} validés</div>
         </div>
         <div className="page-actions">
           <button className="btn btn-ghost btn-sm" onClick={() => { downloadFile(exportCSV("paiements"),"paiements.csv","text/csv"); toast("Export CSV téléchargé","info"); }}>Exporter</button>
@@ -1944,9 +1399,9 @@ function Paiements({ data, refresh, toast }) {
       </div>
 
       <div className="grid-3 mb-16">
-        <div className="stat-card s-green"><div className="stat-label">Chiffre d'affaires</div><div className="stat-value text-mono" style={{fontSize:18}}>{formatFCFA(ca)}</div></div>
-        <div className="stat-card s-orange"><div className="stat-label">En attente</div><div className="stat-value text-mono" style={{fontSize:18}}>{formatFCFA(att)}</div></div>
-        <div className="stat-card s-blue"><div className="stat-label">Transactions</div><div className="stat-value text-mono">{paiements.length}</div></div>
+        <div className="kpi k-gr"><div className="kpi-label">Chiffre d'affaires</div><div className="kpi-value" style={{fontSize:18}}>{formatFCFA(ca)}</div></div>
+        <div className="kpi k-or"><div className="kpi-label">En attente</div><div className="kpi-value" style={{fontSize:18}}>{formatFCFA(att)}</div></div>
+        <div className="kpi k-bl"><div className="kpi-label">Transactions</div><div className="kpi-value">{paiements.length}</div></div>
       </div>
 
       <div className="filter-bar">
@@ -1956,8 +1411,8 @@ function Paiements({ data, refresh, toast }) {
       </div>
 
       <div className="card">
-        <div className="table-wrap">
-          <table className="table">
+        <div className="t-wrap">
+          <table className="t">
             <thead><tr><th>Référence</th><th>Élève</th><th>Montant</th><th>Mode</th><th>Description</th><th>Date</th><th>Statut</th><th></th></tr></thead>
             <tbody>
               {filtered.map(p => {
@@ -1965,12 +1420,12 @@ function Paiements({ data, refresh, toast }) {
                 return (
                   <tr key={p.id}>
                     <td><span className="text-mono text-accent fw-600" style={{fontSize:12.5}}>{p.reference}</span></td>
-                    <td><div className="cell-person"><Avatar nom={e?.nom} prenom={e?.prenom} id={p.eleveId}/><span className="fw-600 text-primary">{e?.prenom} {e?.nom}</span></div></td>
+                    <td><div className="cell-name"><Av nom={e?.nom} prenom={e?.prenom} id={p.eleveId}/><span className="fw-600 text-primary">{e?.prenom} {e?.nom}</span></div></td>
                     <td><span className="text-mono fw-600 text-green" style={{fontSize:14}}>{formatFCFA(p.montant)}</span></td>
-                    <td><span className="text-sm">{modeIcons[p.mode]} {p.mode}</span></td>
-                    <td style={{maxWidth:160,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",fontSize:12,color:"var(--text-muted)"}}>{p.description||"—"}</td>
-                    <td className="text-sm">{formatDate(p.date)}</td>
-                    <td><Badge v={p.statut}/></td>
+                    <td><span className="t-sm">{modeIcons[p.mode]} {p.mode}</span></td>
+                    <td style={{maxWidth:160,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",fontSize:12,color:"var(--t3)"}}>{p.description||"—"}</td>
+                    <td className="t-sm">{formatDate(p.date)}</td>
+                    <td><Tag v={p.statut}/></td>
                     <td>
                       <div className="row gap-4">
                         {p.statut==="En attente" && <button className="btn btn-success btn-sm" onClick={() => { update("paiements",p.id,{statut:"Payé"}); refresh(); toast("Paiement validé"); }}>Valider</button>}
@@ -1984,33 +1439,33 @@ function Paiements({ data, refresh, toast }) {
             </tbody>
           </table>
         </div>
-        {filtered.length===0 && <div className="empty-state"><div className="empty-icon">◻</div><div className="empty-text">Aucun paiement trouvé</div></div>}
+        {filtered.length===0 && <div className="empty"><div className="empty-ico">◻</div><div className="empty-txt">Aucun paiement trouvé</div></div>}
       </div>
 
       {modal && (
         <Modal title="Enregistrer un paiement" onClose={() => setModal(false)}
           footer={<><button className="btn btn-ghost" onClick={() => setModal(false)}>Annuler</button><button className="btn btn-primary" onClick={save}>Enregistrer</button></>}>
-          <div className="field"><label className="field-label">Élève</label>
-            <select className="field-input" value={form.eleveId} onChange={e=>setForm({...form,eleveId:+e.target.value})}>
+          <div className="field"><label className="field-lbl">Élève</label>
+            <select className="field-inp" value={form.eleveId} onChange={e=>setForm({...form,eleveId:+e.target.value})}>
               {eleves.map(e=><option key={e.id} value={e.id}>{e.prenom} {e.nom} — Solde: {formatFCFA(e.solde)}</option>)}
             </select>
           </div>
-          <div className="field-grid">
-            <div className="field"><label className="field-label">Montant (FCFA) *</label><input className="field-input" type="number" min="1" value={form.montant} onChange={e=>setForm({...form,montant:e.target.value})} placeholder="Ex: 50 000"/></div>
-            <div className="field"><label className="field-label">Date</label><input className="field-input" type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})}/></div>
+          <div className="fgrid">
+            <div className="field"><label className="field-lbl">Montant (FCFA) *</label><input className="field-inp" type="number" min="1" value={form.montant} onChange={e=>setForm({...form,montant:e.target.value})} placeholder="Ex: 50 000"/></div>
+            <div className="field"><label className="field-lbl">Date</label><input className="field-inp" type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})}/></div>
           </div>
           <div className="field">
-            <label className="field-label">Mode de paiement</label>
+            <label className="field-lbl">Mode de paiement</label>
             <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:7, marginTop:4}}>
               {["Mobile Money","Espèces","Virement","Carte"].map(m => (
-                <div key={m} className={`pay-option ${modeP===m?"selected":""}`} onClick={() => setModeP(m)}>
+                <div key={m} className={`pay-opt ${modeP===m?"sel":""}`} onClick={() => setModeP(m)}>
                   <span style={{fontSize:18}}>{modeIcons[m]}</span>
                   <span className="pay-name">{m}</span>
                 </div>
               ))}
             </div>
           </div>
-          <div className="field"><label className="field-label">Description</label><input className="field-input" value={form.description} onChange={e=>setForm({...form,description:e.target.value})} placeholder="Ex: 1ère tranche — Permis B"/></div>
+          <div className="field"><label className="field-lbl">Description</label><input className="field-inp" value={form.description} onChange={e=>setForm({...form,description:e.target.value})} placeholder="Ex: 1ère tranche — Permis B"/></div>
         </Modal>
       )}
     </div>
@@ -2036,33 +1491,33 @@ function Vehicules({ data, refresh, toast }) {
 
   return (
     <div>
-      <div className="page-header">
+      <div className="page-head">
         <div>
           <div className="page-title">Parc automobile</div>
-          <div className="page-subtitle">{vehicules.length} véhicules · {vehicules.filter(v=>v.statut==="Disponible").length} disponibles</div>
+          <div className="page-sub">{vehicules.length} véhicules · {vehicules.filter(v=>v.statut==="Disponible").length} disponibles</div>
         </div>
         <button className="btn btn-primary" onClick={() => openForm()}>+ Ajouter un véhicule</button>
       </div>
       <div className="grid-auto">
         {vehicules.map(v => (
-          <div className="vehicle-card" key={v.id}>
-            <div className="vehicle-thumb">{typeIcons[v.type]||"🚗"}</div>
-            <div className="vehicle-body">
+          <div className="v-card" key={v.id}>
+            <div className="v-thumb">{typeIcons[v.type]||"🚗"}</div>
+            <div className="v-body">
               <div className="row-between mb-12">
                 <div>
                   <div className="fw-600 text-primary" style={{fontSize:14, letterSpacing:"-0.01em"}}>{v.marque} {v.modele}</div>
                   <div className="text-sm mt-4">{v.immatriculation} · {v.couleur}</div>
                 </div>
-                <Badge v={v.statut}/>
+                <Tag v={v.statut}/>
               </div>
-              <div className="info-grid" style={{marginBottom:14, fontSize:12.5}}>
-                <span className="info-key">Année</span><span className="info-val text-mono">{v.annee}</span>
-                <span className="info-key">Kilométrage</span><span className="info-val text-mono">{v.kilometrage.toLocaleString()} km</span>
-                <span className="info-key">Carburant</span><span className="info-val">{v.carburant}</span>
-                <span className="info-key">Assurance</span><span className="info-val">{formatDate(v.assurance)}</span>
-                <span className="info-key">Visite tech.</span><span className="info-val">{formatDate(v.visite)}</span>
+              <div className="info-g" style={{marginBottom:14, fontSize:12.5}}>
+                <span className="ik">Année</span><span className="info-val text-mono">{v.annee}</span>
+                <span className="ik">Kilométrage</span><span className="info-val text-mono">{v.kilometrage.toLocaleString()} km</span>
+                <span className="ik">Carburant</span><span className="iv">{v.carburant}</span>
+                <span className="ik">Assurance</span><span className="iv">{formatDate(v.assurance)}</span>
+                <span className="ik">Visite tech.</span><span className="iv">{formatDate(v.visite)}</span>
               </div>
-              {v.notes && <div className="text-sm" style={{background:"var(--bg-muted)", borderRadius:"var(--r-sm)", padding:"8px 10px", marginBottom:12, fontStyle:"italic"}}>{v.notes}</div>}
+              {v.notes && <div className="t-sm" style={{background:"var(--bg-muted)", borderRadius:"var(--r2)", padding:"8px 10px", marginBottom:12, fontStyle:"italic"}}>{v.notes}</div>}
               <div className="row gap-8">
                 <button className="btn btn-ghost btn-sm" style={{flex:1}} onClick={() => openForm(v)}>Modifier</button>
                 <button className="btn btn-danger btn-sm" onClick={() => del(v.id)}>✕</button>
@@ -2070,36 +1525,36 @@ function Vehicules({ data, refresh, toast }) {
             </div>
           </div>
         ))}
-        {vehicules.length===0 && <div className="empty-state"><div className="empty-icon">◻</div><div className="empty-text">Aucun véhicule</div></div>}
+        {vehicules.length===0 && <div className="empty"><div className="empty-ico">◻</div><div className="empty-txt">Aucun véhicule</div></div>}
       </div>
       {modal && (
         <Modal title={sel?"Modifier le véhicule":"Ajouter un véhicule"} onClose={() => setModal(false)} wide
           footer={<><button className="btn btn-ghost" onClick={() => setModal(false)}>Annuler</button><button className="btn btn-primary" onClick={save}>Enregistrer</button></>}>
-          <div className="field-grid">
-            <div className="field"><label className="field-label">Marque *</label><input className="field-input" value={form.marque} onChange={e=>setForm({...form,marque:e.target.value})} placeholder="Ex: Toyota"/></div>
-            <div className="field"><label className="field-label">Modèle *</label><input className="field-input" value={form.modele} onChange={e=>setForm({...form,modele:e.target.value})} placeholder="Ex: Corolla"/></div>
+          <div className="fgrid">
+            <div className="field"><label className="field-lbl">Marque *</label><input className="field-inp" value={form.marque} onChange={e=>setForm({...form,marque:e.target.value})} placeholder="Ex: Toyota"/></div>
+            <div className="field"><label className="field-lbl">Modèle *</label><input className="field-inp" value={form.modele} onChange={e=>setForm({...form,modele:e.target.value})} placeholder="Ex: Corolla"/></div>
           </div>
-          <div className="field-grid">
-            <div className="field"><label className="field-label">Immatriculation *</label><input className="field-input" value={form.immatriculation} onChange={e=>setForm({...form,immatriculation:e.target.value})} placeholder="Ex: LT 234 A"/></div>
-            <div className="field"><label className="field-label">Type</label>
-              <select className="field-input" value={form.type} onChange={e=>setForm({...form,type:e.target.value})}><option>Voiture</option><option>Moto</option><option>Camion</option><option>Bus</option></select>
+          <div className="fgrid">
+            <div className="field"><label className="field-lbl">Immatriculation *</label><input className="field-inp" value={form.immatriculation} onChange={e=>setForm({...form,immatriculation:e.target.value})} placeholder="Ex: LT 234 A"/></div>
+            <div className="field"><label className="field-lbl">Type</label>
+              <select className="field-inp" value={form.type} onChange={e=>setForm({...form,type:e.target.value})}><option>Voiture</option><option>Moto</option><option>Camion</option><option>Bus</option></select>
             </div>
           </div>
-          <div className="field-grid">
-            <div className="field"><label className="field-label">Année</label><input className="field-input" type="number" value={form.annee} onChange={e=>setForm({...form,annee:+e.target.value})}/></div>
-            <div className="field"><label className="field-label">Kilométrage</label><input className="field-input" type="number" value={form.kilometrage} onChange={e=>setForm({...form,kilometrage:+e.target.value})}/></div>
+          <div className="fgrid">
+            <div className="field"><label className="field-lbl">Année</label><input className="field-inp" type="number" value={form.annee} onChange={e=>setForm({...form,annee:+e.target.value})}/></div>
+            <div className="field"><label className="field-lbl">Kilométrage</label><input className="field-inp" type="number" value={form.kilometrage} onChange={e=>setForm({...form,kilometrage:+e.target.value})}/></div>
           </div>
-          <div className="field-grid">
-            <div className="field"><label className="field-label">Couleur</label><input className="field-input" value={form.couleur} onChange={e=>setForm({...form,couleur:e.target.value})}/></div>
-            <div className="field"><label className="field-label">Statut</label>
-              <select className="field-input" value={form.statut} onChange={e=>setForm({...form,statut:e.target.value})}><option>Disponible</option><option>En service</option><option>Maintenance</option><option>Hors service</option></select>
+          <div className="fgrid">
+            <div className="field"><label className="field-lbl">Couleur</label><input className="field-inp" value={form.couleur} onChange={e=>setForm({...form,couleur:e.target.value})}/></div>
+            <div className="field"><label className="field-lbl">Statut</label>
+              <select className="field-inp" value={form.statut} onChange={e=>setForm({...form,statut:e.target.value})}><option>Disponible</option><option>En service</option><option>Maintenance</option><option>Hors service</option></select>
             </div>
           </div>
-          <div className="field-grid">
-            <div className="field"><label className="field-label">Assurance expire le</label><input className="field-input" type="date" value={form.assurance} onChange={e=>setForm({...form,assurance:e.target.value})}/></div>
-            <div className="field"><label className="field-label">Visite technique</label><input className="field-input" type="date" value={form.visite} onChange={e=>setForm({...form,visite:e.target.value})}/></div>
+          <div className="fgrid">
+            <div className="field"><label className="field-lbl">Assurance expire le</label><input className="field-inp" type="date" value={form.assurance} onChange={e=>setForm({...form,assurance:e.target.value})}/></div>
+            <div className="field"><label className="field-lbl">Visite technique</label><input className="field-inp" type="date" value={form.visite} onChange={e=>setForm({...form,visite:e.target.value})}/></div>
           </div>
-          <div className="field"><label className="field-label">Notes</label><textarea className="field-input" value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} placeholder="Observations…"/></div>
+          <div className="field"><label className="field-lbl">Notes</label><textarea className="field-inp" value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})} placeholder="Observations…"/></div>
         </Modal>
       )}
     </div>
@@ -2124,10 +1579,10 @@ function Depenses({ data, refresh, toast }) {
 
   return (
     <div>
-      <div className="page-header">
+      <div className="page-head">
         <div>
           <div className="page-title">Dépenses</div>
-          <div className="page-subtitle">{depenses.length} dépenses · Total : <strong style={{color:"var(--red)"}}>{formatFCFA(total)}</strong></div>
+          <div className="page-sub">{depenses.length} dépenses · Total : <strong style={{color:"var(--red)"}}>{formatFCFA(total)}</strong></div>
         </div>
         <button className="btn btn-primary" onClick={() => { setForm(blank); setModal(true); }}>+ Enregistrer une dépense</button>
       </div>
@@ -2135,16 +1590,16 @@ function Depenses({ data, refresh, toast }) {
         {cats.filter(c=>depenses.some(d=>d.categorie===c)).map(c => {
           const catTotal = depenses.filter(d=>d.categorie===c).reduce((s,d)=>s+d.montant,0);
           return (
-            <div className="stat-card" key={c}>
-              <div className="stat-label">{c}</div>
-              <div className="stat-value text-mono" style={{fontSize:18, color:`var(--${catColors[c]||"blue"})`}}>{formatFCFA(catTotal)}</div>
+            <div className="kpi" key={c}>
+              <div className="kpi-label">{c}</div>
+              <div className="kpi-value" style={{fontSize:18, color:`var(--${catColors[c]||"blue"})`}}>{formatFCFA(catTotal)}</div>
             </div>
           );
         })}
       </div>
       <div className="card">
-        <div className="table-wrap">
-          <table className="table">
+        <div className="t-wrap">
+          <table className="t">
             <thead><tr><th>Catégorie</th><th>Montant</th><th>Description</th><th>Date</th><th>Validé par</th><th></th></tr></thead>
             <tbody>
               {[...depenses].reverse().map(d => (
@@ -2152,32 +1607,32 @@ function Depenses({ data, refresh, toast }) {
                   <td><span className={`badge badge-${catColors[d.categorie]||"blue"}`}>{d.categorie}</span></td>
                   <td><span className="text-mono fw-600 text-red">{formatFCFA(d.montant)}</span></td>
                   <td>{d.description}</td>
-                  <td className="text-sm">{formatDate(d.date)}</td>
-                  <td className="text-sm">{d.validePar}</td>
+                  <td className="t-sm">{formatDate(d.date)}</td>
+                  <td className="t-sm">{d.validePar}</td>
                   <td><button className="btn btn-danger btn-sm" onClick={() => { if(window.confirm("Supprimer ?")) { remove("depenses",d.id); refresh(); toast("Supprimé","info"); } }}>✕</button></td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        {depenses.length===0 && <div className="empty-state"><div className="empty-icon">◻</div><div className="empty-text">Aucune dépense enregistrée</div></div>}
+        {depenses.length===0 && <div className="empty"><div className="empty-ico">◻</div><div className="empty-txt">Aucune dépense enregistrée</div></div>}
       </div>
       {modal && (
         <Modal title="Enregistrer une dépense" onClose={() => setModal(false)}
           footer={<><button className="btn btn-ghost" onClick={() => setModal(false)}>Annuler</button><button className="btn btn-primary" onClick={save}>Enregistrer</button></>}>
-          <div className="field-grid">
-            <div className="field"><label className="field-label">Catégorie</label>
-              <select className="field-input" value={form.categorie} onChange={e=>setForm({...form,categorie:e.target.value})}>
+          <div className="fgrid">
+            <div className="field"><label className="field-lbl">Catégorie</label>
+              <select className="field-inp" value={form.categorie} onChange={e=>setForm({...form,categorie:e.target.value})}>
                 {cats.map(c=><option key={c}>{c}</option>)}
               </select>
             </div>
-            <div className="field"><label className="field-label">Montant (FCFA) *</label><input className="field-input" type="number" min="1" value={form.montant} onChange={e=>setForm({...form,montant:e.target.value})}/></div>
+            <div className="field"><label className="field-lbl">Montant (FCFA) *</label><input className="field-inp" type="number" min="1" value={form.montant} onChange={e=>setForm({...form,montant:e.target.value})}/></div>
           </div>
-          <div className="field-grid">
-            <div className="field"><label className="field-label">Date</label><input className="field-input" type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})}/></div>
-            <div className="field"><label className="field-label">Validé par</label><input className="field-input" value={form.validePar} onChange={e=>setForm({...form,validePar:e.target.value})}/></div>
+          <div className="fgrid">
+            <div className="field"><label className="field-lbl">Date</label><input className="field-inp" type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})}/></div>
+            <div className="field"><label className="field-lbl">Validé par</label><input className="field-inp" value={form.validePar} onChange={e=>setForm({...form,validePar:e.target.value})}/></div>
           </div>
-          <div className="field"><label className="field-label">Description</label><input className="field-input" value={form.description} onChange={e=>setForm({...form,description:e.target.value})} placeholder="Description de la dépense"/></div>
+          <div className="field"><label className="field-lbl">Description</label><input className="field-inp" value={form.description} onChange={e=>setForm({...form,description:e.target.value})} placeholder="Description de la dépense"/></div>
         </Modal>
       )}
     </div>
@@ -2214,10 +1669,10 @@ function Notifications({ data, refresh, toast }) {
 
   return (
     <div>
-      <div className="page-header">
+      <div className="page-head">
         <div>
           <div className="page-title">Notifications</div>
-          <div className="page-subtitle">Envoi de SMS et emails aux élèves</div>
+          <div className="page-sub">Envoi de SMS et emails aux élèves</div>
         </div>
         <button className="btn btn-ghost btn-sm" onClick={bulkSend}>
           Relance impayés ({eleves.filter(e=>e.solde>0).length})
@@ -2225,16 +1680,16 @@ function Notifications({ data, refresh, toast }) {
       </div>
       <div className="grid-2">
         <div className="card">
-          <div className="card-header"><div className="card-title">Composer un message</div></div>
+          <div className="card-head"><div className="card-title">Composer un message</div></div>
           <div className="card-body">
-            <div className="field"><label className="field-label">Destinataire</label>
-              <select className="field-input" value={form.to} onChange={e=>setForm({...form,to:e.target.value})}>
+            <div className="field"><label className="field-lbl">Destinataire</label>
+              <select className="field-inp" value={form.to} onChange={e=>setForm({...form,to:e.target.value})}>
                 <option value="all">Tous les élèves ({eleves.length})</option>
                 {eleves.map(e=><option key={e.id} value={e.id}>{e.prenom} {e.nom}{e.solde>0?` — Solde: ${formatFCFA(e.solde)}`:""}</option>)}
               </select>
             </div>
             <div className="field">
-              <label className="field-label">Canal</label>
+              <label className="field-lbl">Canal</label>
               <div className="row gap-8">
                 {[{v:"sms",l:"SMS"},{v:"email",l:"Email"}].map(c => (
                   <button key={c.v} className={`btn btn-sm ${form.canal===c.v?"btn-primary":"btn-ghost"}`} style={{flex:1}} onClick={() => setForm({...form,canal:c.v})}>{c.l}</button>
@@ -2242,37 +1697,37 @@ function Notifications({ data, refresh, toast }) {
               </div>
             </div>
             <div className="field">
-              <label className="field-label">Modèles</label>
+              <label className="field-lbl">Modèles</label>
               <div style={{display:"flex", flexDirection:"column", gap:5}}>
                 {templates.map((t,i) => (
                   <button key={i} className="btn btn-ghost btn-sm" style={{justifyContent:"flex-start", textAlign:"left"}} onClick={() => setForm({...form,sujet:t.l,message:t.m})}>{t.l}</button>
                 ))}
               </div>
             </div>
-            <div className="field"><label className="field-label">Sujet *</label><input className="field-input" value={form.sujet} onChange={e=>setForm({...form,sujet:e.target.value})} placeholder="Objet du message"/></div>
-            <div className="field"><label className="field-label">Message *</label><textarea className="field-input" rows={3} value={form.message} onChange={e=>setForm({...form,message:e.target.value})} placeholder="Rédigez votre message…"/></div>
+            <div className="field"><label className="field-lbl">Sujet *</label><input className="field-inp" value={form.sujet} onChange={e=>setForm({...form,sujet:e.target.value})} placeholder="Objet du message"/></div>
+            <div className="field"><label className="field-lbl">Message *</label><textarea className="field-inp" rows={3} value={form.message} onChange={e=>setForm({...form,message:e.target.value})} placeholder="Rédigez votre message…"/></div>
             <button className="btn btn-primary btn-full" onClick={send} disabled={!form.message||!form.sujet}>Envoyer</button>
           </div>
         </div>
         <div className="card">
-          <div className="card-header"><div className="card-title">Historique des envois</div><span className="text-mono text-muted" style={{fontSize:12}}>{notifications.length}</span></div>
+          <div className="card-head"><div className="card-title">Historique des envois</div><span className="text-mono text-muted" style={{fontSize:12}}>{notifications.length}</span></div>
           <div style={{padding:"0 18px", maxHeight:520, overflowY:"auto"}}>
             {[...notifications].reverse().map(n => (
               <div key={n.id} style={{display:"flex", gap:11, padding:"12px 0", borderBottom:"1px solid var(--border-muted)"}}>
-                <div style={{width:30, height:30, borderRadius:"var(--r-sm)", background:n.canal==="SMS"?"var(--blue-dim)":"var(--accent-dim)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, flexShrink:0}}>{n.canal==="SMS"?"◈":"✉"}</div>
+                <div style={{width:30, height:30, borderRadius:"var(--r2)", background:n.canal==="SMS"?"var(--blue-dim)":"var(--accent-dim)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, flexShrink:0}}>{n.canal==="SMS"?"◈":"✉"}</div>
                 <div style={{flex:1, minWidth:0}}>
                   <div className="fw-600 text-primary" style={{fontSize:13}}>{n.sujet}</div>
                   <div className="text-sm mt-4">À : {n.to}</div>
-                  <div style={{fontSize:11.5, color:"var(--text-muted)", marginTop:3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", fontStyle:"italic"}}>"{n.message}"</div>
+                  <div style={{fontSize:11.5, color:"var(--t3)", marginTop:3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", fontStyle:"italic"}}>"{n.message}"</div>
                   <div className="row gap-8" style={{marginTop:6}}>
-                    <span className="text-muted" style={{fontSize:11}}>{formatDate(n.date)}</span>
-                    <Badge v="Envoyé"/>
+                    <span className="t-mut" style={{fontSize:11}}>{formatDate(n.date)}</span>
+                    <Tag v="Envoyé"/>
                   </div>
                 </div>
                 <button className="btn btn-danger btn-sm" style={{alignSelf:"center"}} onClick={() => { remove("notifications",n.id); refresh(); }}>✕</button>
               </div>
             ))}
-            {notifications.length===0 && <div className="empty-state"><div className="empty-icon">◻</div><div className="empty-text">Aucun message envoyé</div></div>}
+            {notifications.length===0 && <div className="empty"><div className="empty-ico">◻</div><div className="empty-txt">Aucun message envoyé</div></div>}
           </div>
         </div>
       </div>
@@ -2291,10 +1746,10 @@ function BaseDeDonnees({ toast }) {
 
   return (
     <div>
-      <div className="page-header">
+      <div className="page-head">
         <div>
           <div className="page-title">Base de données</div>
-          <div className="page-subtitle">Visualisez, exportez et gérez toutes les données du système</div>
+          <div className="page-sub">Visualisez, exportez et gérez toutes les données du système</div>
         </div>
         <div className="page-actions">
           <button className="btn btn-ghost btn-sm" onClick={() => { downloadFile(exportSQL(),`autoges_${todayStr()}.sql`); toast("Export SQL téléchargé","info"); }}>Export SQL</button>
@@ -2306,19 +1761,19 @@ function BaseDeDonnees({ toast }) {
 
       <div style={{display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))", gap:10, marginBottom:24}}>
         {tables.map(t => (
-          <div key={t} className="stat-card" style={{cursor:"pointer", borderColor:table===t?"var(--border-focus)":"var(--border)", padding:14}} onClick={() => setTable(t)}>
-            <div className="stat-label" style={{marginBottom:6}}>{t}</div>
-            <div className="stat-value text-mono" style={{fontSize:22}}>{(db[t]||[]).length}</div>
+          <div key={t} className="kpi" style={{cursor:"pointer", borderColor:table===t?"var(--border-focus)":"var(--border)", padding:14}} onClick={() => setTable(t)}>
+            <div className="kpi-label" style={{marginBottom:6}}>{t}</div>
+            <div className="kpi-value" style={{fontSize:22}}>{(db[t]||[]).length}</div>
           </div>
         ))}
       </div>
 
       <div className="card">
-        <div className="card-header">
+        <div className="card-head">
           <div className="row gap-10">
             <div className="card-title">Table :</div>
             <code style={{fontFamily:"var(--mono,'Geist Mono')", fontSize:13, color:"var(--accent)"}}>{table}</code>
-            <span className="badge badge-orange text-mono">{rows.length} lignes</span>
+            <span className="tag tag-orange mono">{rows.length} lignes</span>
           </div>
           <div className="row gap-6">
             {["table","sql","json"].map(v => (
@@ -2328,26 +1783,26 @@ function BaseDeDonnees({ toast }) {
         </div>
         <div style={{padding:18}}>
           {view==="table" && (
-            <div className="table-wrap">
-              <table className="table">
+            <div className="t-wrap">
+              <table className="t">
                 <thead><tr>{cols.map(c => <th key={c}>{c}</th>)}</tr></thead>
                 <tbody>
                   {rows.map((r,i) => (
                     <tr key={i}>
                       {cols.map(c => (
                         <td key={c} style={{maxWidth:180, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>
-                          {r[c]===null||r[c]==="" ? <span style={{color:"var(--text-muted)"}}>null</span> : String(r[c])}
+                          {r[c]===null||r[c]==="" ? <span style={{color:"var(--t3)"}}>null</span> : String(r[c])}
                         </td>
                       ))}
                     </tr>
                   ))}
                 </tbody>
               </table>
-              {rows.length===0 && <div className="empty-state"><div className="empty-icon">◻</div><div className="empty-text">Table vide</div></div>}
+              {rows.length===0 && <div className="empty"><div className="empty-ico">◻</div><div className="empty-txt">Table vide</div></div>}
             </div>
           )}
-          {view==="sql" && <pre className="code-block">{exportSQL()}</pre>}
-          {view==="json" && <pre className="code-block">{JSON.stringify(rows,null,2)}</pre>}
+          {view==="sql" && <pre className="code">{exportSQL()}</pre>}
+          {view==="json" && <pre className="code">{JSON.stringify(rows,null,2)}</pre>}
         </div>
       </div>
     </div>
@@ -2361,28 +1816,28 @@ function Parametres({ toast }) {
 
   return (
     <div>
-      <div className="page-header">
-        <div><div className="page-title">Paramètres</div><div className="page-subtitle">Configuration générale de l'application</div></div>
+      <div className="page-head">
+        <div><div className="page-title">Paramètres</div><div className="page-sub">Configuration générale de l'application</div></div>
       </div>
-      <div className="settings-block">
-        <div className="settings-block-head">Informations de la structure</div>
-        <div className="settings-block-body">
-          <div className="field-grid">
-            <div className="field"><label className="field-label">Nom de la structure</label><input className="field-input" value={meta.nom_structure||""} onChange={e=>setMeta({...meta,nom_structure:e.target.value})}/></div>
-            <div className="field"><label className="field-label">Slogan</label><input className="field-input" value={meta.slogan||""} onChange={e=>setMeta({...meta,slogan:e.target.value})}/></div>
+      <div className="s-block">
+        <div className="s-block-head">Informations de la structure</div>
+        <div className="s-block-body">
+          <div className="fgrid">
+            <div className="field"><label className="field-lbl">Nom de la structure</label><input className="field-inp" value={meta.nom_structure||""} onChange={e=>setMeta({...meta,nom_structure:e.target.value})}/></div>
+            <div className="field"><label className="field-lbl">Slogan</label><input className="field-inp" value={meta.slogan||""} onChange={e=>setMeta({...meta,slogan:e.target.value})}/></div>
           </div>
-          <div className="field-grid">
-            <div className="field"><label className="field-label">Adresse</label><input className="field-input" value={meta.adresse||""} onChange={e=>setMeta({...meta,adresse:e.target.value})}/></div>
-            <div className="field"><label className="field-label">Téléphone</label><input className="field-input" value={meta.telephone||""} onChange={e=>setMeta({...meta,telephone:e.target.value})}/></div>
+          <div className="fgrid">
+            <div className="field"><label className="field-lbl">Adresse</label><input className="field-inp" value={meta.adresse||""} onChange={e=>setMeta({...meta,adresse:e.target.value})}/></div>
+            <div className="field"><label className="field-lbl">Téléphone</label><input className="field-inp" value={meta.telephone||""} onChange={e=>setMeta({...meta,telephone:e.target.value})}/></div>
           </div>
-          <div className="field"><label className="field-label">Email</label><input className="field-input" type="email" value={meta.email||""} onChange={e=>setMeta({...meta,email:e.target.value})}/></div>
+          <div className="field"><label className="field-lbl">Email</label><input className="field-inp" type="email" value={meta.email||""} onChange={e=>setMeta({...meta,email:e.target.value})}/></div>
           <button className="btn btn-primary" onClick={save}>Enregistrer</button>
         </div>
       </div>
-      <div className="settings-block">
-        <div className="settings-block-head">Gestion des données</div>
-        <div className="settings-block-body">
-          <p className="text-sm" style={{marginBottom:14, lineHeight:1.6}}>Exportez vos données dans différents formats. Le format SQL est compatible MySQL/phpMyAdmin pour une migration en production.</p>
+      <div className="s-block">
+        <div className="s-block-head">Gestion des données</div>
+        <div className="s-block-body">
+          <p className="t-sm" style={{marginBottom:14, lineHeight:1.6}}>Exportez vos données dans différents formats. Le format SQL est compatible MySQL/phpMyAdmin pour une migration en production.</p>
           <div className="row gap-8" style={{flexWrap:"wrap"}}>
             <button className="btn btn-ghost btn-sm" onClick={() => { downloadFile(exportSQL(),`autoges_${todayStr()}.sql`); toast("Export SQL téléchargé","info"); }}>Exporter en SQL</button>
             <button className="btn btn-ghost btn-sm" onClick={() => { downloadFile(exportJSON(),"backup.json","application/json"); toast("Backup JSON téléchargé","info"); }}>Backup JSON</button>
@@ -2391,10 +1846,10 @@ function Parametres({ toast }) {
           </div>
         </div>
       </div>
-      <div className="settings-block" style={{borderColor:"rgba(224,92,92,.2)"}}>
-        <div className="settings-block-head" style={{color:"var(--red)"}}>Zone de danger</div>
-        <div className="settings-block-body">
-          <p className="text-sm" style={{marginBottom:14, lineHeight:1.6}}>La réinitialisation supprimera toutes les données et restaurera les données de démonstration initiales.</p>
+      <div className="s-block" style={{borderColor:"rgba(224,92,92,.2)"}}>
+        <div className="s-block-head" style={{color:"var(--red)"}}>Zone de danger</div>
+        <div className="s-block-body">
+          <p className="t-sm" style={{marginBottom:14, lineHeight:1.6}}>La réinitialisation supprimera toutes les données et restaurera les données de démonstration initiales.</p>
           <button className="btn btn-danger btn-sm" onClick={() => { if(window.confirm("Réinitialiser toute la base de données ? Cette action est irréversible.")) { resetDB(); window.location.reload(); } }}>Réinitialiser la base de données</button>
         </div>
       </div>
@@ -2485,25 +1940,25 @@ export default function App() {
   return (
     <>
       <CSS/>
-      <div className="layout">
+      <div className="app">
         {/* Overlay mobile */}
         {sideOpen && <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",zIndex:99,backdropFilter:"blur(3px)"}} onClick={() => setSideOpen(false)}/>}
 
         {/* SIDEBAR */}
-        <nav className={`sidebar${sideOpen?" open":""}`}>
-          <div className="side-brand">
-            <div className="side-logo">🚗</div>
-            <div className="side-brand-text">
-              <div className="name">{(meta.nom_structure||"AutoGES Pro").split(" ").slice(0,2).join(" ")}</div>
-              <div className="version">v1.0</div>
+        <nav className={`sidebar${sideOpen ? " open" : ""}`}>
+          <div className="s-brand">
+            <div className="s-logo">🚗</div>
+            <div>
+              <div className="s-appname">{(meta.nom_structure||"AutoGES Pro").split(" ").slice(0,2).join(" ")}</div>
+              <div className="s-version">v1.0</div>
             </div>
           </div>
-          <div className="side-nav">
+          <div className="s-nav">
             {sections.map(sec => (
-              <div className="side-section" key={sec.key}>
-                <span className="side-section-label">{sec.label}</span>
+              <div className="s-section" key={sec.key}>
+                <span className="s-label">{sec.label}</span>
                 {nav.filter(n=>n.section===sec.key).map(n => (
-                  <div key={n.id} className={`nav-link${page===n.id?" active":""}`} onClick={() => go(n.id)}>
+                  <div key={n.id} className={`nav-item${page===n.id?" active":""}`} onClick={() => go(n.id)}>
                     {n.l}
                     {n.badge ? <span className="nav-badge">{n.badge}</span> : null}
                   </div>
@@ -2511,24 +1966,24 @@ export default function App() {
               </div>
             ))}
           </div>
-          <div className="side-footer">
+          <div className="s-footer">
             <div className="user-row" onClick={() => go("set")}>
-              <div className="user-avatar">AD</div>
+              <div className="u-av">AD</div>
               <div className="user-info">
-                <div className="user-name">Administrateur</div>
-                <div className="user-role">Super Admin</div>
+                <div className="u-name">Administrateur</div>
+                <div className="u-role">Super Admin</div>
               </div>
             </div>
           </div>
         </nav>
 
         {/* MAIN */}
-        <div className="main-content">
+        <div className="main">
           <div className="topbar">
-            <div className="hamburger" onClick={() => setSideOpen(!sideOpen)}>☰</div>
-            <div className="topbar-title">{cur?.l}</div>
-            <div className="topbar-search">
-              <span style={{color:"var(--text-placeholder)", fontSize:13, flexShrink:0}}>⌕</span>
+            <div className="ham" onClick={() => setSideOpen(!sideOpen)}>☰</div>
+            <div className="top-title">{cur?.l}</div>
+            <div className="top-search">
+              <span style={{color:"var(--t3)", fontSize:13, flexShrink:0}}>⌕</span>
               <input placeholder="Rechercher…" onChange={e => {
                 if (e.target.value.length < 2) return;
                 const q = e.target.value.toLowerCase();
@@ -2536,10 +1991,10 @@ export default function App() {
               }}/>
               <span className="search-kbd">⌘K</span>
             </div>
-            <div className="topbar-actions">
+            <div className="top-actions">
               <div className="top-btn" onClick={() => go("no")}>◈<div className="dot"/></div>
               <div className="top-btn" onClick={() => go("bdd")} title="Base de données">⊟</div>
-              <div className="user-avatar" style={{cursor:"pointer"}} onClick={() => go("set")}>AD</div>
+              <div className="u-av" style={{cursor:"pointer"}} onClick={() => go("set")}>AD</div>
             </div>
           </div>
           <div className="page">{pages[page]}</div>

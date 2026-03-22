@@ -1,824 +1,717 @@
-import { useState, useEffect } from "react";
 
-// ============================================================
-// DONNÉES INITIALES
-// ============================================================
-const initialEleves = [
-  { id: 1, nom: "Mbarga", prenom: "Joël", email: "joel.mbarga@gmail.com", telephone: "699 001 002", dateInscription: "2025-01-10", moniteurId: 1, statut: "En cours", heuresEffectuees: 18, heuresTotal: 30, solde: 45000, examens: ["Code: Réussi"], permis: "B", photo: "JM" },
-  { id: 2, nom: "Eyenga", prenom: "Sandra", email: "sandra.eyenga@gmail.com", telephone: "677 234 567", dateInscription: "2025-02-05", moniteurId: 2, statut: "En cours", heuresEffectuees: 10, heuresTotal: 30, solde: 120000, examens: [], permis: "B", photo: "SE" },
-  { id: 3, nom: "Nkodo", prenom: "Paul", email: "paul.nkodo@gmail.com", telephone: "655 111 222", dateInscription: "2024-11-20", moniteurId: 1, statut: "Diplômé", heuresEffectuees: 30, heuresTotal: 30, solde: 0, examens: ["Code: Réussi", "Conduite: Réussi"], permis: "B", photo: "PN" },
-  { id: 4, nom: "Biya", prenom: "Marie", email: "marie.biya@gmail.com", telephone: "690 345 678", dateInscription: "2025-03-01", moniteurId: 3, statut: "En cours", heuresEffectuees: 5, heuresTotal: 30, solde: 150000, examens: [], permis: "A", photo: "MB" },
-  { id: 5, nom: "Ateba", prenom: "Christophe", email: "christophe.ateba@gmail.com", telephone: "676 456 789", dateInscription: "2025-01-28", moniteurId: 2, statut: "Suspendu", heuresEffectuees: 12, heuresTotal: 30, solde: 85000, examens: ["Code: Échoué"], permis: "B", photo: "CA" },
-];
+import { useState } from "react";
 
-const initialMoniteurs = [
-  { id: 1, nom: "Essomba", prenom: "Roger", email: "roger.essomba@autoecole.cm", telephone: "697 001 001", specialite: "Permis B", statut: "Actif", elevesSuivis: 12, noteMoyenne: 4.7, dateEmbauche: "2020-03-15", photo: "RE", salaire: 180000 },
-  { id: 2, nom: "Fouda", prenom: "Carine", email: "carine.fouda@autoecole.cm", telephone: "675 002 002", specialite: "Permis B/A", statut: "Actif", elevesSuivis: 9, noteMoyenne: 4.5, dateEmbauche: "2021-07-01", photo: "CF", salaire: 165000 },
-  { id: 3, nom: "Mvondo", prenom: "Jules", email: "jules.mvondo@autoecole.cm", telephone: "654 003 003", specialite: "Permis A", statut: "Congé", elevesSuivis: 6, noteMoyenne: 4.2, dateEmbauche: "2022-01-10", photo: "JM", salaire: 155000 },
-];
-
-const initialLecons = [
-  { id: 1, eleveId: 1, moniteurId: 1, date: "2025-03-10", heure: "08:00", duree: 2, type: "Conduite", statut: "Confirmée", vehicule: "Toyota Corolla - LT 123 DL", notes: "" },
-  { id: 2, eleveId: 2, moniteurId: 2, date: "2025-03-10", heure: "10:00", duree: 1.5, type: "Code", statut: "En attente", vehicule: "Salle A", notes: "" },
-  { id: 3, eleveId: 4, moniteurId: 3, date: "2025-03-11", heure: "07:00", duree: 2, type: "Conduite", statut: "Confirmée", vehicule: "Honda CB - LT 456 DL", notes: "" },
-  { id: 4, eleveId: 1, moniteurId: 1, date: "2025-03-12", heure: "09:00", duree: 2, type: "Conduite", statut: "Confirmée", vehicule: "Toyota Corolla - LT 123 DL", notes: "" },
-  { id: 5, eleveId: 5, moniteurId: 2, date: "2025-03-13", heure: "15:00", duree: 1, type: "Code", statut: "Annulée", vehicule: "Salle B", notes: "Élève absent" },
-];
-
-const initialExamens = [
-  { id: 1, eleveId: 1, type: "Code", date: "2025-02-20", resultat: "Réussi", score: 38, seuil: 35, centre: "CENAC Douala", notes: "" },
-  { id: 2, eleveId: 3, type: "Code", date: "2024-12-15", resultat: "Réussi", score: 40, seuil: 35, centre: "CENAC Douala", notes: "" },
-  { id: 3, eleveId: 3, type: "Conduite", date: "2025-01-10", resultat: "Réussi", score: 17, seuil: 14, centre: "CENAC Douala", notes: "" },
-  { id: 4, eleveId: 5, type: "Code", date: "2025-02-28", resultat: "Échoué", score: 30, seuil: 35, centre: "CENAC Douala", notes: "Réviser signalisation" },
-];
-
-const initialPaiements = [
-  { id: 1, eleveId: 1, montant: 75000, date: "2025-01-10", type: "Inscription", mode: "Mobile Money", statut: "Payé", reference: "PAY-2025-001" },
-  { id: 2, eleveId: 2, montant: 30000, date: "2025-02-05", type: "Inscription", mode: "Espèces", statut: "Payé", reference: "PAY-2025-002" },
-  { id: 3, eleveId: 4, montant: 50000, date: "2025-03-01", type: "Acompte", mode: "Virement", statut: "Payé", reference: "PAY-2025-003" },
-  { id: 4, eleveId: 3, montant: 200000, date: "2024-11-20", type: "Paiement complet", mode: "Mobile Money", statut: "Payé", reference: "PAY-2024-050" },
-];
-
-const initialNotifications = [
-  { id: 1, eleveId: 1, type: "SMS", sujet: "Rappel leçon", message: "Rappel: Leçon de conduite demain 10/03 à 08h00 avec M. Essomba.", date: "2025-03-09", statut: "Envoyé" },
-  { id: 2, eleveId: 2, type: "Email", sujet: "Convocation examen code", message: "Vous êtes convoqué pour l'examen du code le 15/03/2025 au CENAC Douala.", date: "2025-03-05", statut: "Envoyé" },
-  { id: 3, eleveId: 5, type: "SMS", sujet: "Leçon annulée", message: "Votre leçon du 13/03 à 15h00 a été annulée. Veuillez contacter l'école.", date: "2025-03-12", statut: "Envoyé" },
-];
-
-// ============================================================
-// COMPOSANTS UTILITAIRES
-// ============================================================
-const Avatar = ({ initials, color = "#FF6B35", size = 40 }) => (
-  <div style={{ width: size, height: size, borderRadius: "50%", background: `linear-gradient(135deg, ${color}, ${color}99)`, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, color: "#fff", fontSize: size * 0.35, flexShrink: 0, boxShadow: `0 4px 15px ${color}44` }}>
-    {initials}
-  </div>
-);
-
-const Badge = ({ label }) => {
-  const colors = {
-    "En cours": { bg: "#1a3a2a", text: "#4ade80", border: "#4ade8044" },
-    "Diplômé": { bg: "#1a2a4a", text: "#60a5fa", border: "#60a5fa44" },
-    "Suspendu": { bg: "#3a1a1a", text: "#f87171", border: "#f8717144" },
-    "Actif": { bg: "#1a3a2a", text: "#4ade80", border: "#4ade8044" },
-    "Congé": { bg: "#3a2a1a", text: "#fb923c", border: "#fb923c44" },
-    "Confirmée": { bg: "#1a3a2a", text: "#4ade80", border: "#4ade8044" },
-    "En attente": { bg: "#3a2a1a", text: "#fb923c", border: "#fb923c44" },
-    "Annulée": { bg: "#3a1a1a", text: "#f87171", border: "#f8717144" },
-    "Réussi": { bg: "#1a3a2a", text: "#4ade80", border: "#4ade8044" },
-    "Échoué": { bg: "#3a1a1a", text: "#f87171", border: "#f8717144" },
-    "Payé": { bg: "#1a3a2a", text: "#4ade80", border: "#4ade8044" },
-    "Envoyé": { bg: "#1a2a4a", text: "#60a5fa", border: "#60a5fa44" },
-  };
-  const c = colors[label] || { bg: "#2a2a3a", text: "#a0a0c0", border: "#a0a0c044" };
-  return (
-    <span style={{ padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700, background: c.bg, color: c.text, border: `1px solid ${c.border}`, letterSpacing: 0.5, whiteSpace: "nowrap" }}>
-      {label}
-    </span>
-  );
-};
-
-const StatCard = ({ icon, label, value, sub, color, trend }) => (
-  <div style={{ background: "linear-gradient(135deg, #1a1a2e, #16213e)", border: `1px solid ${color}33`, borderRadius: 16, padding: "20px 24px", position: "relative", overflow: "hidden", transition: "transform 0.2s, box-shadow 0.2s", cursor: "default" }}
-    onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = `0 12px 40px ${color}33`; }}
-    onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}>
-    <div style={{ position: "absolute", top: -20, right: -20, width: 80, height: 80, borderRadius: "50%", background: `${color}15` }} />
-    <div style={{ fontSize: 28, marginBottom: 8 }}>{icon}</div>
-    <div style={{ fontSize: 30, fontWeight: 800, color: "#fff" }}>{value}</div>
-    <div style={{ fontSize: 13, color: "#888", marginTop: 2 }}>{label}</div>
-    {sub && <div style={{ fontSize: 12, color: color, marginTop: 6, fontWeight: 600 }}>{trend} {sub}</div>}
-  </div>
-);
-
-const Modal = ({ title, onClose, children }) => (
-  <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(6px)" }}
-    onClick={e => e.target === e.currentTarget && onClose()}>
-    <div style={{ background: "#0f0f1a", border: "1px solid #2a2a4a", borderRadius: 20, padding: 32, width: "min(90vw, 560px)", maxHeight: "85vh", overflowY: "auto", boxShadow: "0 40px 80px rgba(0,0,0,0.8)" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-        <h3 style={{ margin: 0, color: "#fff", fontSize: 20, fontWeight: 800 }}>{title}</h3>
-        <button onClick={onClose} style={{ background: "#2a2a4a", border: "none", color: "#fff", width: 32, height: 32, borderRadius: 8, cursor: "pointer", fontSize: 16 }}>✕</button>
-      </div>
-      {children}
-    </div>
-  </div>
-);
-
-const InputField = ({ label, value, onChange, type = "text", placeholder, options, required }) => (
-  <div style={{ marginBottom: 16 }}>
-    <label style={{ display: "block", color: "#aaa", fontSize: 12, marginBottom: 6, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1 }}>{label}{required && " *"}</label>
-    {options ? (
-      <select value={value} onChange={e => onChange(e.target.value)} style={{ width: "100%", padding: "10px 14px", background: "#1a1a2e", border: "1px solid #2a2a4a", borderRadius: 10, color: "#fff", fontSize: 14, outline: "none" }}>
-        {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-      </select>
-    ) : (
-      <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
-        style={{ width: "100%", padding: "10px 14px", background: "#1a1a2e", border: "1px solid #2a2a4a", borderRadius: 10, color: "#fff", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
-    )}
-  </div>
-);
-
-const ProgressBar = ({ value, max, color = "#FF6B35" }) => (
-  <div style={{ background: "#1a1a2e", borderRadius: 100, height: 6, overflow: "hidden", width: "100%" }}>
-    <div style={{ width: `${Math.min(100, (value / max) * 100)}%`, height: "100%", background: `linear-gradient(90deg, ${color}, ${color}bb)`, borderRadius: 100, transition: "width 0.5s ease" }} />
-  </div>
-);
-
-// ============================================================
-// PAGE: DASHBOARD
-// ============================================================
-const Dashboard = ({ eleves, moniteurs, lecons, examens, paiements }) => {
-  const totalCA = paiements.reduce((s, p) => s + p.montant, 0);
-  const tauxReussite = examens.length ? Math.round((examens.filter(e => e.resultat === "Réussi").length / examens.length) * 100) : 0;
-  const elevesActifs = eleves.filter(e => e.statut === "En cours").length;
-
-  return (
-    <div>
-      <div style={{ marginBottom: 32 }}>
-        <h2 style={{ fontSize: 28, fontWeight: 800, color: "#fff", margin: 0 }}>🏠 Tableau de bord</h2>
-        <p style={{ color: "#888", margin: "4px 0 0" }}>Vue d'ensemble — Auto-École Excellence, Douala</p>
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 16, marginBottom: 28 }}>
-        <StatCard icon="👨‍🎓" label="Élèves actifs" value={elevesActifs} sub="+2 ce mois" trend="▲" color="#FF6B35" />
-        <StatCard icon="🏆" label="Taux de réussite" value={`${tauxReussite}%`} sub="aux examens" trend="✓" color="#4ade80" />
-        <StatCard icon="📅" label="Leçons planifiées" value={lecons.filter(l => l.statut !== "Annulée").length} sub="cette semaine" trend="📌" color="#6C63FF" />
-        <StatCard icon="💰" label="Chiffre d'affaires" value={`${(totalCA/1000).toFixed(0)}K`} sub="FCFA total" trend="▲" color="#f59e0b" />
-        <StatCard icon="👨‍🏫" label="Moniteurs actifs" value={moniteurs.filter(m => m.statut === "Actif").length} sub="en activité" trend="✓" color="#38bdf8" />
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
-        <div style={{ background: "linear-gradient(135deg, #1a1a2e, #16213e)", border: "1px solid #2a2a4a", borderRadius: 16, padding: 24 }}>
-          <h3 style={{ color: "#fff", margin: "0 0 20px", fontSize: 16 }}>📊 Performance des moniteurs</h3>
-          {moniteurs.map((m, i) => (
-            <div key={m.id} style={{ marginBottom: 18 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                <span style={{ color: "#ccc", fontSize: 14 }}>{m.prenom} {m.nom}</span>
-                <span style={{ color: "#FF6B35", fontWeight: 700, fontSize: 13 }}>⭐ {m.noteMoyenne} ({m.elevesSuivis} élèves)</span>
-              </div>
-              <ProgressBar value={m.noteMoyenne} max={5} color={["#FF6B35","#6C63FF","#4ade80"][i % 3]} />
-            </div>
-          ))}
-        </div>
-
-        <div style={{ background: "linear-gradient(135deg, #1a1a2e, #16213e)", border: "1px solid #2a2a4a", borderRadius: 16, padding: 24 }}>
-          <h3 style={{ color: "#fff", margin: "0 0 20px", fontSize: 16 }}>🎯 Répartition par permis</h3>
-          {[{ label: "Permis B (Voiture)", count: eleves.filter(e => e.permis === "B").length, color: "#FF6B35" }, { label: "Permis A (Moto)", count: eleves.filter(e => e.permis === "A").length, color: "#6C63FF" }].map((r, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 20 }}>
-              <div style={{ width: 52, height: 52, borderRadius: 14, background: `${r.color}22`, border: `2px solid ${r.color}55`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, fontWeight: 800, color: r.color }}>{r.count}</div>
-              <div style={{ flex: 1 }}>
-                <div style={{ color: "#ccc", fontSize: 14, marginBottom: 6 }}>{r.label}</div>
-                <ProgressBar value={r.count} max={eleves.length} color={r.color} />
-              </div>
-            </div>
-          ))}
-          <div style={{ padding: "14px 18px", background: "#0a0a18", borderRadius: 12, display: "flex", justifyContent: "space-between" }}>
-            <span style={{ color: "#888", fontSize: 13 }}>Total inscrits</span>
-            <span style={{ color: "#fff", fontWeight: 800, fontSize: 18 }}>{eleves.length}</span>
-          </div>
-        </div>
-      </div>
-
-      <div style={{ background: "linear-gradient(135deg, #1a1a2e, #16213e)", border: "1px solid #2a2a4a", borderRadius: 16, padding: 24 }}>
-        <h3 style={{ color: "#fff", margin: "0 0 20px", fontSize: 16 }}>🕒 Prochaines leçons</h3>
-        <div style={{ display: "grid", gap: 10 }}>
-          {lecons.filter(l => l.statut !== "Annulée").slice(0, 4).map(l => {
-            const eleve = eleves.find(e => e.id === l.eleveId);
-            const moniteur = moniteurs.find(m => m.id === l.moniteurId);
-            return (
-              <div key={l.id} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 16px", background: "#0a0a18", borderRadius: 12 }}>
-                <Avatar initials={eleve?.photo || "?"} color="#FF6B35" size={38} />
-                <div style={{ flex: 1 }}>
-                  <div style={{ color: "#fff", fontSize: 14, fontWeight: 600 }}>{eleve?.prenom} {eleve?.nom}</div>
-                  <div style={{ color: "#888", fontSize: 12 }}>avec {moniteur?.prenom} {moniteur?.nom} • {l.vehicule}</div>
-                </div>
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ color: "#FF6B35", fontWeight: 700, fontSize: 13 }}>{l.date} à {l.heure}</div>
-                  <Badge label={l.statut} />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ============================================================
-// PAGE: ÉLÈVES
-// ============================================================
-const GestionEleves = ({ eleves, setEleves, moniteurs }) => {
-  const [search, setSearch] = useState("");
-  const [showModal, setShowModal] = useState(false);
-  const [selected, setSelected] = useState(null);
-  const [form, setForm] = useState({ nom: "", prenom: "", email: "", telephone: "", moniteurId: moniteurs[0]?.id || 1, permis: "B", heuresTotal: 30 });
-
-  const filtered = eleves.filter(e => `${e.nom} ${e.prenom} ${e.email}`.toLowerCase().includes(search.toLowerCase()));
-
-  const openEdit = (e) => { setSelected(e); setForm({ ...e }); setShowModal(true); };
-  const openNew = () => { setSelected(null); setForm({ nom: "", prenom: "", email: "", telephone: "", moniteurId: moniteurs[0]?.id || 1, permis: "B", heuresTotal: 30 }); setShowModal(true); };
-  const save = () => {
-    if (!form.nom || !form.prenom) return;
-    if (selected) {
-      setEleves(prev => prev.map(e => e.id === selected.id ? { ...e, ...form } : e));
-    } else {
-      setEleves(prev => [...prev, { ...form, id: Date.now(), statut: "En cours", heuresEffectuees: 0, solde: 200000, examens: [], dateInscription: new Date().toISOString().split("T")[0], photo: ((form.prenom[0] || "") + (form.nom[0] || "")).toUpperCase() }]);
+const G = () => (
+  <style>{`
+    @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap');
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --p:#FF4D00;--pl:#FF6B2B;--pg:rgba(255,77,0,0.2);
+      --ac:#FFB800;--ac2:#00D4FF;
+      --bg:#0A0C10;--bg2:#0F1218;--bg3:#151A22;
+      --card:#13181F;--card2:#1A2030;
+      --bd:rgba(255,255,255,0.07);--bd2:rgba(255,77,0,0.2);
+      --t:#F0F4FF;--t2:#8A9BB5;--t3:#4A5568;
+      --ok:#00D68F;--warn:#FFB800;--err:#FF4060;--info:#00D4FF;--pur:#8B5CF6;
     }
-    setShowModal(false);
-  };
-  const del = (id) => { if (window.confirm("Supprimer cet élève ?")) setEleves(prev => prev.filter(e => e.id !== id)); };
+    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--t);overflow-x:hidden}
+    ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--bg2)}::-webkit-scrollbar-thumb{background:var(--p);border-radius:3px}
+    .lay{display:flex;min-height:100vh}
+    .side{width:255px;min-height:100vh;background:var(--bg2);border-right:1px solid var(--bd);display:flex;flex-direction:column;position:fixed;top:0;left:0;z-index:100}
+    .slogo{padding:22px 18px 18px;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:11px}
+    .lic{width:40px;height:40px;background:var(--p);border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:19px;box-shadow:0 4px 14px var(--pg);flex-shrink:0}
+    .lname{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;line-height:1.1}
+    .ltag{font-size:10px;color:var(--p);font-weight:700;text-transform:uppercase;letter-spacing:1px}
+    .snav{flex:1;padding:14px 10px;overflow-y:auto}
+    .slbl{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:1.5px;padding:0 8px 7px;margin-top:4px}
+    .ni{display:flex;align-items:center;gap:9px;padding:9px 11px;border-radius:9px;cursor:pointer;transition:all .2s;color:var(--t2);font-size:13.5px;font-weight:500;margin-bottom:2px;user-select:none}
+    .ni:hover{background:var(--card2);color:var(--t)}
+    .ni.on{background:linear-gradient(135deg,var(--p),var(--pl));color:#fff;box-shadow:0 4px 14px var(--pg)}
+    .ni .ico{font-size:17px;width:21px;text-align:center;flex-shrink:0}
+    .nbg{margin-left:auto;background:var(--p);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px}
+    .ni.on .nbg{background:rgba(255,255,255,0.25)}
+    .sfoot{padding:14px 10px;border-top:1px solid var(--bd)}
+    .ucard{display:flex;align-items:center;gap:10px;padding:9px 11px;background:var(--card2);border-radius:11px;cursor:pointer}
+    .uav{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--p),var(--ac));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:#fff;flex-shrink:0}
+    .uname{font-size:13px;font-weight:600}.urole{font-size:11px;color:var(--t2)}
+    .main{flex:1;margin-left:255px;display:flex;flex-direction:column;min-height:100vh}
+    .top{height:65px;background:var(--bg2);border-bottom:1px solid var(--bd);display:flex;align-items:center;padding:0 26px;gap:14px;position:sticky;top:0;z-index:50}
+    .ttl{font-family:'Syne',sans-serif;font-size:19px;font-weight:700;flex:1}
+    .tsrch{display:flex;align-items:center;background:var(--card);border:1px solid var(--bd);border-radius:9px;padding:8px 13px;gap:8px;width:250px}
+    .tsrch input{background:none;border:none;outline:none;color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;width:100%}
+    .tsrch input::placeholder{color:var(--t3)}
+    .tacts{display:flex;align-items:center;gap:9px}
+    .ibtn{width:37px;height:37px;border-radius:9px;border:1px solid var(--bd);background:var(--card);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--t2);font-size:15px;transition:all .2s;position:relative}
+    .ibtn:hover{border-color:var(--p);color:var(--p)}
+    .ndot{position:absolute;top:6px;right:6px;width:6px;height:6px;background:var(--p);border-radius:50%;border:1.5px solid var(--bg2)}
+    .pg{padding:26px;flex:1}
+    .ph{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:26px}
+    .ptl{font-family:'Syne',sans-serif;font-size:25px;font-weight:800}
+    .pst{font-size:13px;color:var(--t2);margin-top:4px}
+    .btn{display:inline-flex;align-items:center;gap:7px;padding:9px 19px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .2s;font-family:'DM Sans',sans-serif;white-space:nowrap}
+    .btnp{background:linear-gradient(135deg,var(--p),var(--pl));color:#fff;box-shadow:0 4px 14px var(--pg)}
+    .btnp:hover{transform:translateY(-1px);box-shadow:0 6px 22px var(--pg)}
+    .btng{background:var(--card2);color:var(--t2);border:1px solid var(--bd)}
+    .btng:hover{color:var(--t);border-color:var(--bd2)}
+    .btnd{background:rgba(255,64,96,.12);color:var(--err);border:1px solid rgba(255,64,96,.2)}
+    .btns{background:rgba(0,214,143,.12);color:var(--ok);border:1px solid rgba(0,214,143,.2)}
+    .bsm{padding:6px 13px;font-size:12px;border-radius:8px}
+    .card{background:var(--card);border:1px solid var(--bd);border-radius:15px;overflow:hidden}
+    .ch{padding:17px 20px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between}
+    .ctl{font-family:'Syne',sans-serif;font-size:14px;font-weight:700}
+    .cb{padding:20px}
+    .sg{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+    .sc{background:var(--card);border:1px solid var(--bd);border-radius:15px;padding:20px;position:relative;overflow:hidden;transition:all .3s}
+    .sc:hover{border-color:var(--bd2);transform:translateY(-2px);box-shadow:0 0 30px rgba(255,77,0,.12)}
+    .sc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+    .sc.or::before{background:linear-gradient(90deg,var(--p),var(--ac))}
+    .sc.bl::before{background:linear-gradient(90deg,var(--info),#0090FF)}
+    .sc.gr::before{background:linear-gradient(90deg,var(--ok),#00A870)}
+    .sc.pu::before{background:linear-gradient(90deg,var(--pur),#A855F7)}
+    .si{width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:19px;margin-bottom:14px}
+    .si.or{background:rgba(255,77,0,.14)} .si.bl{background:rgba(0,212,255,.11)} .si.gr{background:rgba(0,214,143,.11)} .si.pu{background:rgba(139,92,246,.11)}
+    .sv{font-family:'Syne',sans-serif;font-size:30px;font-weight:800;line-height:1;margin-bottom:5px}
+    .sl{font-size:12px;color:var(--t2);font-weight:500;text-transform:uppercase;letter-spacing:.5px}
+    .sch{font-size:12px;font-weight:600;margin-top:11px;display:flex;align-items:center;gap:4px}
+    .sch.up{color:var(--ok)}.sch.dn{color:var(--err)}
+    .g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+    .ga{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:16px}
+    .dt{width:100%;border-collapse:collapse}
+    .dt th{padding:11px 15px;text-align:left;font-size:11px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--bd)}
+    .dt td{padding:13px 15px;font-size:13px;color:var(--t2);border-bottom:1px solid var(--bd)}
+    .dt tr:last-child td{border-bottom:none}
+    .dt tr:hover td{background:var(--card2);color:var(--t)}
+    .cn{display:flex;align-items:center;gap:10px}
+    .av{width:35px;height:35px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0}
+    .avl{width:46px;height:46px;border-radius:13px;font-size:15px}
+    .aor{background:rgba(255,77,0,.18);color:var(--p)} .abl{background:rgba(0,212,255,.13);color:var(--info)}
+    .agr{background:rgba(0,214,143,.13);color:var(--ok)} .apu{background:rgba(139,92,246,.13);color:var(--pur)}
+    .ayl{background:rgba(255,184,0,.13);color:var(--ac)}
+    .bdg{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+    .bdg::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor}
+    .bok{background:rgba(0,214,143,.11);color:var(--ok)} .bwn{background:rgba(255,184,0,.11);color:var(--warn)}
+    .ber{background:rgba(255,64,96,.11);color:var(--err)} .bin{background:rgba(0,212,255,.11);color:var(--info)}
+    .bor{background:rgba(255,77,0,.11);color:var(--p)} .bpu{background:rgba(139,92,246,.11);color:var(--pur)}
+    .pb{height:6px;background:var(--bg3);border-radius:3px;overflow:hidden}
+    .pf{height:100%;border-radius:3px;transition:width .6s}
+    .por{background:linear-gradient(90deg,var(--p),var(--ac))} .pbl{background:linear-gradient(90deg,var(--info),#0090FF)}
+    .pgr{background:linear-gradient(90deg,var(--ok),#00A870)} .ppu{background:linear-gradient(90deg,var(--pur),#A855F7)}
+    .fg{margin-bottom:16px}
+    .fl{display:block;font-size:12px;font-weight:600;color:var(--t2);margin-bottom:7px;text-transform:uppercase;letter-spacing:.5px}
+    .fi{width:100%;padding:10px 13px;background:var(--bg3);border:1px solid var(--bd);border-radius:9px;color:var(--t);font-size:13.5px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s}
+    .fi:focus{border-color:var(--p);box-shadow:0 0 0 3px var(--pg)}
+    .fi::placeholder{color:var(--t3)}
+    .fgd{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .ov{position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;z-index:1000;padding:18px}
+    .mdl{background:var(--card);border:1px solid var(--bd);border-radius:18px;width:100%;max-width:540px;max-height:90vh;overflow-y:auto;box-shadow:0 12px 50px rgba(0,0,0,.6)}
+    .mh{padding:20px 22px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between}
+    .mt{font-family:'Syne',sans-serif;font-size:17px;font-weight:700}
+    .mx{width:30px;height:30px;border-radius:8px;background:var(--card2);border:none;color:var(--t2);cursor:pointer;font-size:17px;display:flex;align-items:center;justify-content:center}
+    .mx:hover{color:var(--err)}
+    .mb{padding:22px}.mf{padding:16px 22px;border-top:1px solid var(--bd);display:flex;gap:9px;justify-content:flex-end}
+    .sfb{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+    .sb{display:flex;align-items:center;gap:7px;background:var(--card);border:1px solid var(--bd);border-radius:9px;padding:8px 13px;flex:1;min-width:190px}
+    .sb input{background:none;border:none;outline:none;color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;width:100%}
+    .sb input::placeholder{color:var(--t3)}
+    .mc{background:var(--card);border:1px solid var(--bd);border-radius:15px;padding:20px;transition:all .3s;cursor:pointer}
+    .mc:hover{border-color:var(--bd2);transform:translateY(-2px);box-shadow:0 0 28px rgba(255,77,0,.1)}
+    .mch{display:flex;align-items:center;gap:13px;margin-bottom:14px}
+    .mi .mn{font-family:'Syne',sans-serif;font-size:15px;font-weight:700}
+    .mi .mr{font-size:12px;color:var(--p);font-weight:600;margin-top:2px}
+    .ms{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+    .msv{font-family:'Syne',sans-serif;font-size:19px;font-weight:700}
+    .msl{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+    .str{color:var(--ac);font-size:12px;letter-spacing:1px}
+    .vcard{background:var(--card);border:1px solid var(--bd);border-radius:15px;padding:18px;transition:all .3s}
+    .vcard:hover{border-color:var(--bd2)}
+    .vimg{width:100%;height:110px;background:var(--bg3);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:48px;margin-bottom:13px}
+    .pm{display:flex;align-items:center;gap:11px;padding:12px 14px;background:var(--card2);border:1px solid var(--bd);border-radius:11px;cursor:pointer;transition:all .2s;margin-bottom:7px}
+    .pm:hover,.pm.sel{border-color:var(--p);background:rgba(255,77,0,.05)}
+    .ni2{display:flex;gap:12px;padding:13px 0;border-bottom:1px solid var(--bd)}
+    .ni2:last-child{border-bottom:none}
+    .tic{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+    .tl{display:flex;flex-direction:column;gap:0}
+    .ti{display:flex;gap:13px;padding-bottom:18px;position:relative}
+    .ti:last-child{padding-bottom:0}
+    .ti:not(:last-child)::after{content:'';position:absolute;left:14px;top:30px;bottom:0;width:1px;background:var(--bd)}
+    .td2{width:30px;height:30px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;z-index:1}
+    .ti-c .t1{font-size:13px;font-weight:600;color:var(--t)}
+    .ti-c .t2x{font-size:11px;color:var(--t3);margin-top:2px}
+    .top3{display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid var(--bd)}
+    .top3:last-child{border-bottom:none}
+    .trk{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0}
+    .r1{background:rgba(255,184,0,.18);color:var(--ac)} .r2{background:rgba(0,212,255,.13);color:var(--info)}
+    .r3{background:rgba(139,92,246,.13);color:var(--pur)} .ro{background:var(--bg3);color:var(--t3)}
+    .div2{height:1px;background:var(--bd);margin:13px 0}
+    .ml{margin-left:auto}
+    @keyframes fi{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    .fa{animation:fi .32s ease forwards}
+    @media(max-width:768px){.side{transform:translateX(-255px)}.main{margin-left:0}.sg{grid-template-columns:repeat(2,1fr)}.g2{grid-template-columns:1fr}}
+  `}</style>
+);
 
-  return (
-    <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-        <div>
-          <h2 style={{ fontSize: 26, fontWeight: 800, color: "#fff", margin: 0 }}>👨‍🎓 Gestion des Élèves</h2>
-          <p style={{ color: "#888", margin: "4px 0 0", fontSize: 14 }}>{eleves.length} élèves inscrits</p>
-        </div>
-        <button onClick={openNew} style={{ background: "linear-gradient(135deg, #FF6B35, #FF8C5A)", border: "none", color: "#fff", padding: "12px 24px", borderRadius: 12, cursor: "pointer", fontWeight: 700, fontSize: 14, boxShadow: "0 4px 20px #FF6B3566" }}>
-          + Nouvel élève
-        </button>
-      </div>
+// DATA
+const AC = ["or","bl","gr","pu","yl"];
+const gc = (id) => AC[(id-1)%AC.length];
+const init = (n,p) => `${(p||"")[0]||""}${(n||"")[0]||""}`.toUpperCase();
+const strs = (n) => "★".repeat(Math.floor(n))+"☆".repeat(5-Math.floor(n));
+const fmtF = (n) => n?.toLocaleString("fr-FR")+" FCFA";
+const fmtD = (d) => d?new Date(d).toLocaleDateString("fr-FR"):"-";
 
-      <input value={search} onChange={e => setSearch(e.target.value)} placeholder="🔍 Rechercher un élève..."
-        style={{ width: "100%", padding: "12px 16px", background: "#1a1a2e", border: "1px solid #2a2a4a", borderRadius: 12, color: "#fff", fontSize: 14, marginBottom: 20, boxSizing: "border-box", outline: "none" }} />
+const E0=[
+  {id:1,nom:"Mbarga",prenom:"Joël",email:"joel@gmail.com",tel:"699 001 002",ins:"2025-01-10",mid:1,stat:"Actif",h:18,tot:30,solde:45000,permis:"B",ex:"Réussi"},
+  {id:2,nom:"Eyenga",prenom:"Sandra",email:"sandra@gmail.com",tel:"677 234 567",ins:"2025-02-05",mid:2,stat:"Actif",h:10,tot:30,solde:120000,permis:"B",ex:"En attente"},
+  {id:3,nom:"Nkodo",prenom:"Paul",email:"paul@gmail.com",tel:"655 111 222",ins:"2024-11-20",mid:1,stat:"Diplômé",h:30,tot:30,solde:0,permis:"B",ex:"Réussi"},
+  {id:4,nom:"Biya",prenom:"Marie",email:"marie@gmail.com",tel:"690 345 678",ins:"2025-03-01",mid:3,stat:"Actif",h:5,tot:30,solde:150000,permis:"A",ex:"En attente"},
+  {id:5,nom:"Ateba",prenom:"Chris",email:"chris@gmail.com",tel:"676 456 789",ins:"2025-01-28",mid:2,stat:"Suspendu",h:12,tot:30,solde:85000,permis:"B",ex:"Échoué"},
+  {id:6,nom:"Fouda",prenom:"Aline",email:"aline@gmail.com",tel:"691 789 012",ins:"2025-03-15",mid:1,stat:"Actif",h:22,tot:30,solde:30000,permis:"B",ex:"Réussi"},
+  {id:7,nom:"Tamba",prenom:"Léo",email:"leo@gmail.com",tel:"674 321 654",ins:"2025-02-20",mid:3,stat:"Actif",h:8,tot:30,solde:95000,permis:"A",ex:"En attente"},
+];
+const M0=[
+  {id:1,nom:"Essomba",prenom:"Roger",email:"roger@autoecole.cm",tel:"697 001 001",spe:"Permis B",stat:"Actif",note:4.8,sal:180000,exp:"5 ans"},
+  {id:2,nom:"Fouda",prenom:"Carine",email:"carine@autoecole.cm",tel:"675 002 002",spe:"Permis B/A",stat:"Actif",note:4.6,sal:165000,exp:"3 ans"},
+  {id:3,nom:"Mvondo",prenom:"Jules",email:"jules@autoecole.cm",tel:"654 003 003",spe:"Permis A",stat:"Congé",note:4.3,sal:155000,exp:"2 ans"},
+  {id:4,nom:"Ngono",prenom:"Béatrice",email:"bea@autoecole.cm",tel:"698 004 004",spe:"Permis B",stat:"Actif",note:4.7,sal:170000,exp:"4 ans"},
+];
+const L0=[
+  {id:1,eid:1,mid:1,date:"2025-03-22",h:"08:00",dur:2,type:"Conduite",stat:"Confirmée",veh:"Toyota Corolla — LT 234 A"},
+  {id:2,eid:2,mid:2,date:"2025-03-22",h:"10:00",dur:1,type:"Code",stat:"Confirmée",veh:"Salle A"},
+  {id:3,eid:4,mid:3,date:"2025-03-22",h:"14:00",dur:2,type:"Conduite",stat:"En attente",veh:"Honda CB500 — LT 567 B"},
+  {id:4,eid:6,mid:1,date:"2025-03-23",h:"09:00",dur:2,type:"Conduite",stat:"Confirmée",veh:"Renault Logan — LT 890 C"},
+  {id:5,eid:7,mid:3,date:"2025-03-23",h:"11:00",dur:1,type:"Code",stat:"Annulée",veh:"Salle B"},
+];
+const P0=[
+  {id:1,eid:1,mt:55000,date:"2025-03-10",mode:"Mobile Money",stat:"Payé",ref:"PAY-4821"},
+  {id:2,eid:2,mt:80000,date:"2025-03-12",mode:"Espèces",stat:"Payé",ref:"PAY-4822"},
+  {id:3,eid:4,mt:100000,date:"2025-03-15",mode:"Virement",stat:"En attente",ref:"PAY-4823"},
+  {id:4,eid:6,mt:70000,date:"2025-03-18",mode:"Mobile Money",stat:"Payé",ref:"PAY-4824"},
+  {id:5,eid:7,mt:55000,date:"2025-03-20",mode:"Espèces",stat:"Payé",ref:"PAY-4825"},
+];
+const X0=[
+  {id:1,eid:1,type:"Code",date:"2025-02-14",sc:38,seuil:35,centre:"CENAC Douala",stat:"Réussi"},
+  {id:2,eid:1,type:"Conduite",date:"2025-03-05",sc:82,seuil:70,centre:"CENAC Douala",stat:"Réussi"},
+  {id:3,eid:3,type:"Code",date:"2024-12-10",sc:40,seuil:35,centre:"CENAC Douala",stat:"Réussi"},
+  {id:4,eid:3,type:"Conduite",date:"2025-01-08",sc:78,seuil:70,centre:"CENAC Douala",stat:"Réussi"},
+  {id:5,eid:5,type:"Code",date:"2025-02-20",sc:30,seuil:35,centre:"CENAC Douala",stat:"Échoué"},
+  {id:6,eid:6,type:"Code",date:"2025-03-01",sc:37,seuil:35,centre:"CENAC Douala",stat:"Réussi"},
+];
 
-      <div style={{ display: "grid", gap: 12 }}>
-        {filtered.map(e => {
-          const moniteur = moniteurs.find(m => m.id === e.moniteurId);
-          const colors = ["#FF6B35","#6C63FF","#4ade80","#f59e0b","#38bdf8"];
-          return (
-            <div key={e.id} style={{ background: "linear-gradient(135deg, #1a1a2e, #16213e)", border: "1px solid #2a2a4a", borderRadius: 16, padding: 20, display: "flex", alignItems: "center", gap: 16, transition: "border-color 0.2s" }}
-              onMouseEnter={el => el.currentTarget.style.borderColor = "#FF6B3566"}
-              onMouseLeave={el => el.currentTarget.style.borderColor = "#2a2a4a"}>
-              <Avatar initials={e.photo} color={colors[e.id % 5]} size={52} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4, flexWrap: "wrap" }}>
-                  <span style={{ color: "#fff", fontWeight: 700, fontSize: 16 }}>{e.prenom} {e.nom}</span>
-                  <Badge label={e.statut} />
-                  <span style={{ fontSize: 11, color: "#888", background: "#2a2a4a", padding: "2px 8px", borderRadius: 20 }}>Permis {e.permis}</span>
-                </div>
-                <div style={{ color: "#888", fontSize: 12, marginBottom: 10 }}>📧 {e.email} • 📱 {e.telephone} • 👨‍🏫 {moniteur?.prenom} {moniteur?.nom}</div>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <ProgressBar value={e.heuresEffectuees} max={e.heuresTotal} color="#FF6B35" />
-                  <span style={{ color: "#FF6B35", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>{e.heuresEffectuees}h/{e.heuresTotal}h</span>
-                </div>
-              </div>
-              <div style={{ textAlign: "right", flexShrink: 0 }}>
-                <div style={{ color: e.solde > 0 ? "#f87171" : "#4ade80", fontWeight: 700, fontSize: 14, marginBottom: 8 }}>
-                  {e.solde > 0 ? `${e.solde.toLocaleString()} FCFA` : "✓ Soldé"}
-                </div>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button onClick={() => openEdit(e)} style={{ background: "#2a2a4a", border: "none", color: "#fff", padding: "8px 14px", borderRadius: 8, cursor: "pointer", fontSize: 13 }}>✏️</button>
-                  <button onClick={() => del(e.id)} style={{ background: "#3a1a1a", border: "none", color: "#f87171", padding: "8px 12px", borderRadius: 8, cursor: "pointer", fontSize: 13 }}>🗑️</button>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {showModal && (
-        <Modal title={selected ? "Modifier l'élève" : "Nouvel élève"} onClose={() => setShowModal(false)}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <InputField label="Prénom" value={form.prenom} onChange={v => setForm({...form, prenom: v})} required />
-            <InputField label="Nom" value={form.nom} onChange={v => setForm({...form, nom: v})} required />
-          </div>
-          <InputField label="Email" type="email" value={form.email} onChange={v => setForm({...form, email: v})} />
-          <InputField label="Téléphone" value={form.telephone} onChange={v => setForm({...form, telephone: v})} />
-          <InputField label="Moniteur" value={form.moniteurId} onChange={v => setForm({...form, moniteurId: Number(v)})}
-            options={moniteurs.map(m => ({ value: m.id, label: `${m.prenom} ${m.nom}` }))} />
-          <InputField label="Type de permis" value={form.permis} onChange={v => setForm({...form, permis: v})}
-            options={[{ value: "B", label: "Permis B (Voiture)" }, { value: "A", label: "Permis A (Moto)" }]} />
-          <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
-            <button onClick={() => setShowModal(false)} style={{ flex: 1, padding: "12px", background: "#2a2a4a", border: "none", color: "#fff", borderRadius: 12, cursor: "pointer", fontWeight: 600 }}>Annuler</button>
-            <button onClick={save} style={{ flex: 1, padding: "12px", background: "linear-gradient(135deg, #FF6B35, #FF8C5A)", border: "none", color: "#fff", borderRadius: 12, cursor: "pointer", fontWeight: 700 }}>Enregistrer</button>
-          </div>
-        </Modal>
-      )}
-    </div>
-  );
+const Bdg = ({v}) => {
+  const m={Actif:"ok",Diplômé:"in",Suspendu:"er",Congé:"wn",Confirmée:"ok","En attente":"wn",Annulée:"er",Payé:"ok",Réussi:"ok",Échoué:"er"};
+  return <span className={`bdg b${m[v]||"in"}`}>{v}</span>;
 };
 
-// ============================================================
-// PAGE: MONITEURS
-// ============================================================
-const GestionMoniteurs = ({ moniteurs, setMoniteurs }) => {
-  const [showModal, setShowModal] = useState(false);
-  const [selected, setSelected] = useState(null);
-  const [form, setForm] = useState({ nom: "", prenom: "", email: "", telephone: "", specialite: "Permis B", salaire: 150000 });
-
-  const openEdit = (m) => { setSelected(m); setForm({ ...m }); setShowModal(true); };
-  const openNew = () => { setSelected(null); setForm({ nom: "", prenom: "", email: "", telephone: "", specialite: "Permis B", salaire: 150000 }); setShowModal(true); };
-  const save = () => {
-    if (!form.nom || !form.prenom) return;
-    if (selected) {
-      setMoniteurs(prev => prev.map(m => m.id === selected.id ? { ...m, ...form } : m));
-    } else {
-      setMoniteurs(prev => [...prev, { ...form, id: Date.now(), statut: "Actif", elevesSuivis: 0, noteMoyenne: 0, dateEmbauche: new Date().toISOString().split("T")[0], photo: ((form.prenom[0] || "") + (form.nom[0] || "")).toUpperCase() }]);
-    }
-    setShowModal(false);
-  };
-  const del = (id) => { if (window.confirm("Supprimer ce moniteur ?")) setMoniteurs(prev => prev.filter(m => m.id !== id)); };
-
-  return (
-    <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-        <div>
-          <h2 style={{ fontSize: 26, fontWeight: 800, color: "#fff", margin: 0 }}>👨‍🏫 Gestion des Moniteurs</h2>
-          <p style={{ color: "#888", margin: "4px 0 0", fontSize: 14 }}>{moniteurs.length} moniteurs enregistrés</p>
-        </div>
-        <button onClick={openNew} style={{ background: "linear-gradient(135deg, #6C63FF, #8B83FF)", border: "none", color: "#fff", padding: "12px 24px", borderRadius: 12, cursor: "pointer", fontWeight: 700, fontSize: 14, boxShadow: "0 4px 20px #6C63FF66" }}>
-          + Nouveau moniteur
-        </button>
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
-        {moniteurs.map(m => {
-          const colors = ["#6C63FF","#FF6B35","#4ade80"];
-          const c = colors[m.id % 3];
-          return (
-            <div key={m.id} style={{ background: "linear-gradient(135deg, #1a1a2e, #16213e)", border: "1px solid #2a2a4a", borderRadius: 20, padding: 24, transition: "border-color 0.2s, transform 0.2s" }}
-              onMouseEnter={el => { el.currentTarget.style.borderColor = "#6C63FF66"; el.currentTarget.style.transform = "translateY(-2px)"; }}
-              onMouseLeave={el => { el.currentTarget.style.borderColor = "#2a2a4a"; el.currentTarget.style.transform = "translateY(0)"; }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
-                <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
-                  <Avatar initials={m.photo} color={c} size={52} />
-                  <div>
-                    <div style={{ color: "#fff", fontWeight: 700, fontSize: 16 }}>{m.prenom} {m.nom}</div>
-                    <div style={{ color: "#888", fontSize: 13 }}>{m.specialite}</div>
-                  </div>
-                </div>
-                <Badge label={m.statut} />
-              </div>
-              <div style={{ display: "grid", gap: 6, fontSize: 13, marginBottom: 16 }}>
-                <div style={{ color: "#888" }}>📧 {m.email}</div>
-                <div style={{ color: "#888" }}>📱 {m.telephone}</div>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ color: "#888" }}>📅 Depuis {m.dateEmbauche}</span>
-                  <span style={{ color: "#f59e0b", fontWeight: 700 }}>💰 {m.salaire.toLocaleString()} FCFA</span>
-                </div>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
-                <div style={{ background: "#0a0a18", borderRadius: 12, padding: "12px", textAlign: "center" }}>
-                  <div style={{ fontSize: 22, fontWeight: 800, color: c }}>{m.elevesSuivis}</div>
-                  <div style={{ fontSize: 11, color: "#888" }}>Élèves suivis</div>
-                </div>
-                <div style={{ background: "#0a0a18", borderRadius: 12, padding: "12px", textAlign: "center" }}>
-                  <div style={{ fontSize: 22, fontWeight: 800, color: "#f59e0b" }}>⭐ {m.noteMoyenne}</div>
-                  <div style={{ fontSize: 11, color: "#888" }}>Note moyenne</div>
-                </div>
-              </div>
-              <div style={{ display: "flex", gap: 8 }}>
-                <button onClick={() => openEdit(m)} style={{ flex: 1, background: "#2a2a4a", border: "none", color: "#fff", padding: "10px", borderRadius: 10, cursor: "pointer", fontWeight: 600, fontSize: 13 }}>✏️ Modifier</button>
-                <button onClick={() => del(m.id)} style={{ background: "#3a1a1a", border: "none", color: "#f87171", padding: "10px 14px", borderRadius: 10, cursor: "pointer", fontSize: 13 }}>🗑️</button>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {showModal && (
-        <Modal title={selected ? "Modifier le moniteur" : "Nouveau moniteur"} onClose={() => setShowModal(false)}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <InputField label="Prénom" value={form.prenom} onChange={v => setForm({...form, prenom: v})} required />
-            <InputField label="Nom" value={form.nom} onChange={v => setForm({...form, nom: v})} required />
-          </div>
-          <InputField label="Email" value={form.email} onChange={v => setForm({...form, email: v})} />
-          <InputField label="Téléphone" value={form.telephone} onChange={v => setForm({...form, telephone: v})} />
-          <InputField label="Spécialité" value={form.specialite} onChange={v => setForm({...form, specialite: v})}
-            options={[{ value: "Permis B", label: "Permis B" }, { value: "Permis A", label: "Permis A" }, { value: "Permis B/A", label: "Permis B & A" }]} />
-          <InputField label="Salaire mensuel (FCFA)" type="number" value={form.salaire} onChange={v => setForm({...form, salaire: Number(v)})} />
-          <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
-            <button onClick={() => setShowModal(false)} style={{ flex: 1, padding: "12px", background: "#2a2a4a", border: "none", color: "#fff", borderRadius: 12, cursor: "pointer", fontWeight: 600 }}>Annuler</button>
-            <button onClick={save} style={{ flex: 1, padding: "12px", background: "linear-gradient(135deg, #6C63FF, #8B83FF)", border: "none", color: "#fff", borderRadius: 12, cursor: "pointer", fontWeight: 700 }}>Enregistrer</button>
-          </div>
-        </Modal>
-      )}
+const Modal = ({title,onClose,children,footer}) => (
+  <div className="ov" onClick={e=>e.target===e.currentTarget&&onClose()}>
+    <div className="mdl fa">
+      <div className="mh"><div className="mt">{title}</div><button className="mx" onClick={onClose}>×</button></div>
+      <div className="mb">{children}</div>
+      {footer&&<div className="mf">{footer}</div>}
     </div>
-  );
-};
+  </div>
+);
 
-// ============================================================
-// PAGE: PLANNING
-// ============================================================
-const Planning = ({ lecons, setLecons, eleves, moniteurs }) => {
-  const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({ eleveId: eleves[0]?.id || 1, moniteurId: moniteurs[0]?.id || 1, date: "", heure: "08:00", duree: 2, type: "Conduite", vehicule: "", statut: "En attente" });
-
-  const save = () => {
-    setLecons(prev => [...prev, { ...form, id: Date.now(), eleveId: Number(form.eleveId), moniteurId: Number(form.moniteurId), duree: Number(form.duree), notes: "" }]);
-    setShowModal(false);
-  };
-
-  const statusColor = { "Confirmée": "#4ade80", "En attente": "#fb923c", "Annulée": "#f87171" };
-
+// DASHBOARD
+const DB = ({E,M,L,P,X}) => {
+  const actifs=E.filter(e=>e.stat==="Actif").length;
+  const ca=P.filter(p=>p.stat==="Payé").reduce((s,p)=>s+p.mt,0);
+  const tr=X.length?Math.round(X.filter(x=>x.stat==="Réussi").length/X.length*100):0;
+  const top=[...E].sort((a,b)=>b.h-a.h).slice(0,4);
+  const acts=[
+    {ico:"👤",t:"Nouvel élève inscrit",d:"Marie Biya — Permis A",time:"Il y a 2h",bg:"rgba(255,77,0,.11)"},
+    {ico:"📅",t:"Leçon confirmée",d:"Joël Mbarga avec R. Essomba",time:"Il y a 4h",bg:"rgba(0,212,255,.11)"},
+    {ico:"💳",t:"Paiement reçu",d:"80 000 FCFA — Sandra Eyenga",time:"Hier 14h30",bg:"rgba(0,214,143,.11)"},
+    {ico:"🎓",t:"Examen réussi",d:"Aline Fouda — Code de la route",time:"Il y a 3j",bg:"rgba(255,184,0,.11)"},
+  ];
+  const today=L.filter(l=>l.date==="2025-03-22");
   return (
-    <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-        <div>
-          <h2 style={{ fontSize: 26, fontWeight: 800, color: "#fff", margin: 0 }}>📅 Planning des Leçons</h2>
-          <p style={{ color: "#888", margin: "4px 0 0", fontSize: 14 }}>Semaine du 10 au 14 Mars 2025</p>
-        </div>
-        <button onClick={() => setShowModal(true)} style={{ background: "linear-gradient(135deg, #4ade80, #22c55e)", border: "none", color: "#000", padding: "12px 24px", borderRadius: 12, cursor: "pointer", fontWeight: 700, fontSize: 14, boxShadow: "0 4px 20px #4ade8066" }}>
-          + Planifier une leçon
-        </button>
+    <div className="fa">
+      <div className="ph">
+        <div><div className="ptl">Tableau de bord 📊</div><div className="pst">Bienvenue ! Aperçu de votre activité en temps réel.</div></div>
+        <div style={{display:"flex",gap:9}}><button className="btn btng">📥 Exporter</button><button className="btn btnp">+ Nouvel élève</button></div>
       </div>
-
-      <div style={{ display: "grid", gap: 12 }}>
-        {lecons.map(l => {
-          const eleve = eleves.find(e => e.id === l.eleveId);
-          const moniteur = moniteurs.find(m => m.id === l.moniteurId);
-          const sc = statusColor[l.statut] || "#888";
-          return (
-            <div key={l.id} style={{ background: "linear-gradient(135deg, #1a1a2e, #16213e)", border: `1px solid ${sc}33`, borderRadius: 14, padding: 20, display: "flex", alignItems: "center", gap: 16 }}>
-              <div style={{ width: 4, height: 52, borderRadius: 4, background: sc, flexShrink: 0 }} />
-              <Avatar initials={eleve?.photo || "?"} color={sc} size={44} />
-              <div style={{ flex: 1 }}>
-                <div style={{ color: "#fff", fontWeight: 700, fontSize: 15, marginBottom: 4 }}>{eleve?.prenom} {eleve?.nom} — {l.type}</div>
-                <div style={{ color: "#888", fontSize: 13 }}>👨‍🏫 {moniteur?.prenom} {moniteur?.nom} • 🚗 {l.vehicule} • ⏱️ {l.duree}h</div>
-              </div>
-              <div style={{ textAlign: "right" }}>
-                <div style={{ color: sc, fontWeight: 700, fontSize: 14, marginBottom: 6 }}>{l.date} à {l.heure}</div>
-                <Badge label={l.statut} />
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {showModal && (
-        <Modal title="Planifier une leçon" onClose={() => setShowModal(false)}>
-          <InputField label="Élève" value={form.eleveId} onChange={v => setForm({...form, eleveId: Number(v)})}
-            options={eleves.map(e => ({ value: e.id, label: `${e.prenom} ${e.nom}` }))} />
-          <InputField label="Moniteur" value={form.moniteurId} onChange={v => setForm({...form, moniteurId: Number(v)})}
-            options={moniteurs.map(m => ({ value: m.id, label: `${m.prenom} ${m.nom}` }))} />
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <InputField label="Date" type="date" value={form.date} onChange={v => setForm({...form, date: v})} />
-            <InputField label="Heure" type="time" value={form.heure} onChange={v => setForm({...form, heure: v})} />
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <InputField label="Durée (h)" type="number" value={form.duree} onChange={v => setForm({...form, duree: v})} />
-            <InputField label="Type" value={form.type} onChange={v => setForm({...form, type: v})}
-              options={[{ value: "Conduite", label: "Conduite" }, { value: "Code", label: "Code" }]} />
-          </div>
-          <InputField label="Véhicule / Salle" value={form.vehicule} onChange={v => setForm({...form, vehicule: v})} placeholder="Ex: Toyota Corolla - LT 123 DL" />
-          <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
-            <button onClick={() => setShowModal(false)} style={{ flex: 1, padding: "12px", background: "#2a2a4a", border: "none", color: "#fff", borderRadius: 12, cursor: "pointer", fontWeight: 600 }}>Annuler</button>
-            <button onClick={save} style={{ flex: 1, padding: "12px", background: "linear-gradient(135deg, #4ade80, #22c55e)", border: "none", color: "#000", borderRadius: 12, cursor: "pointer", fontWeight: 700 }}>Enregistrer</button>
-          </div>
-        </Modal>
-      )}
-    </div>
-  );
-};
-
-// ============================================================
-// PAGE: EXAMENS
-// ============================================================
-const GestionExamens = ({ examens, setExamens, eleves }) => {
-  const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({ eleveId: eleves[0]?.id || 1, type: "Code", date: "", resultat: "Réussi", score: 0, seuil: 35, centre: "CENAC Douala", notes: "" });
-
-  const save = () => {
-    setExamens(prev => [...prev, { ...form, id: Date.now(), eleveId: Number(form.eleveId), score: Number(form.score), seuil: Number(form.seuil) }]);
-    setShowModal(false);
-  };
-
-  const stats = { total: examens.length, reussis: examens.filter(e => e.resultat === "Réussi").length, echoues: examens.filter(e => e.resultat === "Échoué").length };
-
-  return (
-    <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-        <div>
-          <h2 style={{ fontSize: 26, fontWeight: 800, color: "#fff", margin: 0 }}>🏆 Gestion des Examens</h2>
-          <p style={{ color: "#888", margin: "4px 0 0", fontSize: 14 }}>{stats.total} examens enregistrés</p>
-        </div>
-        <button onClick={() => setShowModal(true)} style={{ background: "linear-gradient(135deg, #f59e0b, #fbbf24)", border: "none", color: "#000", padding: "12px 24px", borderRadius: 12, cursor: "pointer", fontWeight: 700, fontSize: 14, boxShadow: "0 4px 20px #f59e0b66" }}>
-          + Enregistrer un examen
-        </button>
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 24 }}>
-        {[{ label: "Total examens", value: stats.total, color: "#60a5fa", bg: "#1a2a4a", border: "#2a3a6a" },
-          { label: "Réussis ✓", value: stats.reussis, color: "#4ade80", bg: "#1a3a2a", border: "#2a5a3a" },
-          { label: "Échoués ✗", value: stats.echoues, color: "#f87171", bg: "#3a1a1a", border: "#5a2a2a" }].map((s, i) => (
-          <div key={i} style={{ background: s.bg, border: `1px solid ${s.border}`, borderRadius: 16, padding: 20, textAlign: "center" }}>
-            <div style={{ fontSize: 36, fontWeight: 800, color: s.color }}>{s.value}</div>
-            <div style={{ color: "#888", fontSize: 13 }}>{s.label}</div>
+      <div className="sg">
+        {[{cl:"or",ico:"👥",v:actifs,l:"Élèves actifs",ch:"+8%"},
+          {cl:"gr",ico:"🎓",v:`${tr}%`,l:"Taux de réussite",ch:"+3%"},
+          {cl:"bl",ico:"📅",v:L.length,l:"Leçons planifiées",ch:"+12%"},
+          {cl:"pu",ico:"💰",v:fmtF(ca),l:"Chiffre d'affaires",ch:"+15%"},
+        ].map((s,i)=>(
+          <div className={`sc ${s.cl}`} key={i}>
+            <div className={`si ${s.cl}`}>{s.ico}</div>
+            <div className="sv">{s.v}</div>
+            <div className="sl">{s.l}</div>
+            <div className="sch up">▲ {s.ch} ce mois</div>
           </div>
         ))}
       </div>
-
-      <div style={{ display: "grid", gap: 12 }}>
-        {examens.map(ex => {
-          const eleve = eleves.find(e => e.id === ex.eleveId);
-          const maxScore = ex.type === "Code" ? 40 : 20;
-          const c = ex.resultat === "Réussi" ? "#4ade80" : "#f87171";
-          return (
-            <div key={ex.id} style={{ background: "linear-gradient(135deg, #1a1a2e, #16213e)", border: "1px solid #2a2a4a", borderRadius: 14, padding: 20, display: "flex", alignItems: "center", gap: 16 }}>
-              <Avatar initials={eleve?.photo || "?"} color={c} size={48} />
-              <div style={{ flex: 1 }}>
-                <div style={{ color: "#fff", fontWeight: 700, fontSize: 15, marginBottom: 4 }}>{eleve?.prenom} {eleve?.nom} — Examen {ex.type}</div>
-                <div style={{ color: "#888", fontSize: 13, marginBottom: 10 }}>📍 {ex.centre} • 📅 {ex.date}</div>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <ProgressBar value={ex.score} max={maxScore} color={c} />
-                  <span style={{ color: c, fontWeight: 700, fontSize: 12, whiteSpace: "nowrap" }}>{ex.score}/{maxScore} pts</span>
+      <div className="g2" style={{marginBottom:16}}>
+        <div className="card">
+          <div className="ch"><div className="ctl">⚡ Activité récente</div><span className="bdg bor">Aujourd'hui</span></div>
+          <div style={{padding:"10px 20px"}}>
+            <div className="tl">
+              {acts.map((a,i)=>(
+                <div className="ti" key={i}>
+                  <div className="td2" style={{background:a.bg}}>{a.ico}</div>
+                  <div className="ti-c"><div className="t1">{a.t}</div><div className="t2x">{a.d} · {a.time}</div></div>
                 </div>
-                {ex.notes && <div style={{ color: "#f59e0b", fontSize: 12, marginTop: 6 }}>💬 {ex.notes}</div>}
-              </div>
-              <Badge label={ex.resultat} />
+              ))}
             </div>
-          );
-        })}
+          </div>
+        </div>
+        <div className="card">
+          <div className="ch"><div className="ctl">🏆 Meilleure progression</div><span style={{fontSize:12,color:"var(--t2)"}}>Ce mois</span></div>
+          <div style={{padding:"10px 20px"}}>
+            {top.map((e,i)=>(
+              <div className="top3" key={e.id}>
+                <div className={`trk ${i===0?"r1":i===1?"r2":i===2?"r3":"ro"}`}>{i+1}</div>
+                <div className={`av a${gc(e.id)}`}>{init(e.nom,e.prenom)}</div>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:13,fontWeight:600}}>{e.prenom} {e.nom}</div>
+                  <div style={{marginTop:4}}><div className="pb"><div className="pf por" style={{width:`${Math.round(e.h/e.tot*100)}%`}}/></div><span style={{fontSize:11,color:"var(--t3)"}}>{e.h}/{e.tot}h</span></div>
+                </div>
+                <span style={{fontSize:13,fontWeight:700,color:"var(--p)"}}>{Math.round(e.h/e.tot*100)}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
-
-      {showModal && (
-        <Modal title="Enregistrer un examen" onClose={() => setShowModal(false)}>
-          <InputField label="Élève" value={form.eleveId} onChange={v => setForm({...form, eleveId: Number(v)})}
-            options={eleves.map(e => ({ value: e.id, label: `${e.prenom} ${e.nom}` }))} />
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <InputField label="Type" value={form.type} onChange={v => setForm({...form, type: v, seuil: v === "Code" ? 35 : 14})}
-              options={[{ value: "Code", label: "Examen de code" }, { value: "Conduite", label: "Examen de conduite" }]} />
-            <InputField label="Date" type="date" value={form.date} onChange={v => setForm({...form, date: v})} />
+      <div className="g2">
+        <div className="card">
+          <div className="ch"><div className="ctl">🚗 Leçons du jour</div><span className="bdg bin">{today.length} séances</span></div>
+          <table className="dt">
+            <thead><tr><th>Élève</th><th>Heure</th><th>Type</th><th>Statut</th></tr></thead>
+            <tbody>{today.slice(0,4).map(l=>{const e=E.find(x=>x.id===l.eid);return(
+              <tr key={l.id}><td><div className="cn"><div className={`av a${gc(l.eid)}`}>{init(e?.nom,e?.prenom)}</div><span style={{fontWeight:600,color:"var(--t)"}}>{e?.prenom} {e?.nom}</span></div></td>
+              <td style={{fontWeight:700,color:"var(--p)"}}>{l.h}</td><td>{l.type}</td><td><Bdg v={l.stat}/></td></tr>
+            );})}</tbody>
+          </table>
+        </div>
+        <div className="card">
+          <div className="ch"><div className="ctl">📊 Répartition</div></div>
+          <div className="cb">
+            {[{l:"Permis B (Voiture)",c:E.filter(e=>e.permis==="B").length,t:E.length,p:"or"},
+              {l:"Permis A (Moto)",c:E.filter(e=>e.permis==="A").length,t:E.length,p:"bl"},
+              {l:"Diplômés",c:E.filter(e=>e.stat==="Diplômé").length,t:E.length,p:"gr"},
+              {l:"Moniteurs actifs",c:M.filter(m=>m.stat==="Actif").length,t:M.length,p:"pu"},
+            ].map((r,i)=>(
+              <div key={i} style={{marginBottom:14}}>
+                <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
+                  <span style={{fontSize:13,color:"var(--t2)"}}>{r.l}</span>
+                  <span style={{fontSize:13,fontWeight:700}}>{r.c}/{r.t}</span>
+                </div>
+                <div className="pb"><div className={`pf p${r.p}`} style={{width:`${Math.round(r.c/r.t*100)}%`}}/></div>
+              </div>
+            ))}
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <InputField label="Score obtenu" type="number" value={form.score} onChange={v => setForm({...form, score: v})} />
-            <InputField label="Résultat" value={form.resultat} onChange={v => setForm({...form, resultat: v})}
-              options={[{ value: "Réussi", label: "✓ Réussi" }, { value: "Échoué", label: "✗ Échoué" }]} />
-          </div>
-          <InputField label="Centre d'examen" value={form.centre} onChange={v => setForm({...form, centre: v})} />
-          <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
-            <button onClick={() => setShowModal(false)} style={{ flex: 1, padding: "12px", background: "#2a2a4a", border: "none", color: "#fff", borderRadius: 12, cursor: "pointer", fontWeight: 600 }}>Annuler</button>
-            <button onClick={save} style={{ flex: 1, padding: "12px", background: "linear-gradient(135deg, #f59e0b, #fbbf24)", border: "none", color: "#000", borderRadius: 12, cursor: "pointer", fontWeight: 700 }}>Enregistrer</button>
-          </div>
-        </Modal>
-      )}
+        </div>
+      </div>
     </div>
   );
 };
 
-// ============================================================
-// PAGE: FACTURATION
-// ============================================================
-const Facturation = ({ paiements, setPaiements, eleves }) => {
-  const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({ eleveId: eleves[0]?.id || 1, montant: 0, type: "Inscription", mode: "Mobile Money", statut: "Payé" });
-
-  const totalCA = paiements.reduce((s, p) => s + p.montant, 0);
-  const save = () => {
-    const ref = `PAY-${new Date().getFullYear()}-${String(paiements.length + 1).padStart(3, "0")}`;
-    setPaiements(prev => [...prev, { ...form, id: Date.now(), date: new Date().toISOString().split("T")[0], reference: ref, montant: Number(form.montant), eleveId: Number(form.eleveId) }]);
-    setShowModal(false);
+// ELEVES
+const EL = ({E,setE,M}) => {
+  const [srch,setSrch]=useState("");
+  const [filt,setFilt]=useState("Tous");
+  const [modal,setModal]=useState(false);
+  const [form,setForm]=useState({nom:"",prenom:"",email:"",tel:"",permis:"B",mid:1,stat:"Actif",h:0,tot:30,solde:0});
+  const [sel,setSel]=useState(null);
+  const filtered=E.filter(e=>{
+    const m=`${e.nom} ${e.prenom} ${e.email}`.toLowerCase().includes(srch.toLowerCase());
+    const s=filt==="Tous"||e.stat===filt;
+    return m&&s;
+  });
+  const save=()=>{
+    if(sel)setE(E.map(e=>e.id===sel.id?{...e,...form}:e));
+    else setE([...E,{...form,id:Date.now(),ex:"En attente",ins:new Date().toISOString().slice(0,10)}]);
+    setModal(false);setSel(null);setForm({nom:"",prenom:"",email:"",tel:"",permis:"B",mid:1,stat:"Actif",h:0,tot:30,solde:0});
   };
-
   return (
-    <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-        <div>
-          <h2 style={{ fontSize: 26, fontWeight: 800, color: "#fff", margin: 0 }}>💰 Facturation & Paiements</h2>
-          <p style={{ color: "#888", margin: "4px 0 0", fontSize: 14 }}>CA total: {totalCA.toLocaleString()} FCFA</p>
-        </div>
-        <button onClick={() => setShowModal(true)} style={{ background: "linear-gradient(135deg, #38bdf8, #0ea5e9)", border: "none", color: "#fff", padding: "12px 24px", borderRadius: 12, cursor: "pointer", fontWeight: 700, fontSize: 14, boxShadow: "0 4px 20px #38bdf866" }}>
-          + Enregistrer paiement
-        </button>
+    <div className="fa">
+      <div className="ph">
+        <div><div className="ptl">Gestion des Élèves 👥</div><div className="pst">{E.length} élèves · {E.filter(e=>e.stat==="Actif").length} actifs</div></div>
+        <button className="btn btnp" onClick={()=>setModal(true)}>+ Nouvel élève</button>
       </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 24 }}>
-        <div style={{ background: "#1a3a2a", border: "1px solid #2a5a3a", borderRadius: 16, padding: 20 }}>
-          <div style={{ fontSize: 22, fontWeight: 800, color: "#4ade80" }}>{totalCA.toLocaleString()} FCFA</div>
-          <div style={{ color: "#888", fontSize: 13 }}>Chiffre d'affaires total</div>
-        </div>
-        <div style={{ background: "#1a2a4a", border: "1px solid #2a3a6a", borderRadius: 16, padding: 20 }}>
-          <div style={{ fontSize: 22, fontWeight: 800, color: "#60a5fa" }}>{paiements.length}</div>
-          <div style={{ color: "#888", fontSize: 13 }}>Paiements enregistrés</div>
-        </div>
-        <div style={{ background: "#2a1a3a", border: "1px solid #4a2a5a", borderRadius: 16, padding: 20 }}>
-          <div style={{ fontSize: 22, fontWeight: 800, color: "#c084fc" }}>{Math.round(totalCA / (eleves.length || 1)).toLocaleString()} FCFA</div>
-          <div style={{ color: "#888", fontSize: 13 }}>Revenu moyen / élève</div>
-        </div>
+      <div className="sfb">
+        <div className="sb"><span>🔍</span><input placeholder="Rechercher..." value={srch} onChange={e=>setSrch(e.target.value)}/></div>
+        {["Tous","Actif","Diplômé","Suspendu"].map(s=><button key={s} className={`btn bsm ${filt===s?"btnp":"btng"}`} onClick={()=>setFilt(s)}>{s}</button>)}
       </div>
-
-      <div style={{ background: "linear-gradient(135deg, #1a1a2e, #16213e)", border: "1px solid #2a2a4a", borderRadius: 16, overflow: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 600 }}>
-          <thead>
-            <tr style={{ background: "#0a0a18" }}>
-              {["Référence","Élève","Type","Montant","Mode","Date","Statut"].map(h => (
-                <th key={h} style={{ padding: "14px 16px", textAlign: "left", color: "#888", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, borderBottom: "1px solid #2a2a4a" }}>{h}</th>
-              ))}
+      <div className="card">
+        <table className="dt">
+          <thead><tr><th>Élève</th><th>Téléphone</th><th>Permis</th><th>Progression</th><th>Solde</th><th>Examen</th><th>Statut</th><th></th></tr></thead>
+          <tbody>{filtered.map(e=>(
+            <tr key={e.id}>
+              <td><div className="cn"><div className={`av a${gc(e.id)}`}>{init(e.nom,e.prenom)}</div><div><div style={{fontWeight:700,color:"var(--t)",fontSize:13.5}}>{e.prenom} {e.nom}</div><div style={{fontSize:11,color:"var(--t3)"}}>{e.email}</div></div></div></td>
+              <td>{e.tel}</td>
+              <td><span className={`bdg b${e.permis==="B"?"or":"in"}`}>Permis {e.permis}</span></td>
+              <td style={{minWidth:130}}><div style={{display:"flex",alignItems:"center",gap:7}}><div className="pb" style={{flex:1}}><div className="pf por" style={{width:`${Math.round(e.h/e.tot*100)}%`}}/></div><span style={{fontSize:11,color:"var(--t3)",whiteSpace:"nowrap"}}>{e.h}h/{e.tot}h</span></div></td>
+              <td style={{fontWeight:700,color:e.solde>0?"var(--err)":"var(--ok)"}}>{fmtF(e.solde)}</td>
+              <td><Bdg v={e.ex}/></td>
+              <td><Bdg v={e.stat}/></td>
+              <td><div style={{display:"flex",gap:5}}><button className="btn btng bsm" onClick={()=>{setSel(e);setForm(e);setModal(true);}}>✏️</button><button className="btn btnd bsm" onClick={()=>setE(E.filter(x=>x.id!==e.id))}>🗑️</button></div></td>
             </tr>
-          </thead>
-          <tbody>
-            {paiements.map((p, i) => {
-              const eleve = eleves.find(e => e.id === p.eleveId);
-              return (
-                <tr key={p.id} style={{ borderBottom: "1px solid #1a1a2e", background: i % 2 === 0 ? "transparent" : "#0a0a1022" }}>
-                  <td style={{ padding: "12px 16px", color: "#60a5fa", fontSize: 12, fontFamily: "monospace" }}>{p.reference}</td>
-                  <td style={{ padding: "12px 16px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <Avatar initials={eleve?.photo || "?"} color="#38bdf8" size={28} />
-                      <span style={{ color: "#fff", fontSize: 13 }}>{eleve?.prenom} {eleve?.nom}</span>
-                    </div>
-                  </td>
-                  <td style={{ padding: "12px 16px", color: "#ccc", fontSize: 13 }}>{p.type}</td>
-                  <td style={{ padding: "12px 16px", color: "#4ade80", fontWeight: 700 }}>{p.montant.toLocaleString()} FCFA</td>
-                  <td style={{ padding: "12px 16px", color: "#ccc", fontSize: 13 }}>{p.mode}</td>
-                  <td style={{ padding: "12px 16px", color: "#888", fontSize: 13 }}>{p.date}</td>
-                  <td style={{ padding: "12px 16px" }}><Badge label={p.statut} /></td>
-                </tr>
-              );
-            })}
+          ))}</tbody>
+        </table>
+        {filtered.length===0&&<div style={{textAlign:"center",padding:"50px 20px",color:"var(--t3)"}}>👥 Aucun élève trouvé</div>}
+      </div>
+      {modal&&<Modal title={sel?"Modifier l'élève":"Nouvel élève"} onClose={()=>{setModal(false);setSel(null);}} footer={<><button className="btn btng" onClick={()=>setModal(false)}>Annuler</button><button className="btn btnp" onClick={save}>💾 Enregistrer</button></>}>
+        <div className="fgd"><div className="fg"><label className="fl">Prénom</label><input className="fi" value={form.prenom} onChange={e=>setForm({...form,prenom:e.target.value})} placeholder="Prénom"/></div><div className="fg"><label className="fl">Nom</label><input className="fi" value={form.nom} onChange={e=>setForm({...form,nom:e.target.value})} placeholder="Nom"/></div></div>
+        <div className="fg"><label className="fl">Email</label><input className="fi" value={form.email} onChange={e=>setForm({...form,email:e.target.value})} placeholder="email@exemple.com"/></div>
+        <div className="fgd"><div className="fg"><label className="fl">Téléphone</label><input className="fi" value={form.tel} onChange={e=>setForm({...form,tel:e.target.value})} placeholder="6XX XXX XXX"/></div><div className="fg"><label className="fl">Type de permis</label><select className="fi" value={form.permis} onChange={e=>setForm({...form,permis:e.target.value})}><option>B</option><option>A</option></select></div></div>
+        <div className="fgd"><div className="fg"><label className="fl">Moniteur</label><select className="fi" value={form.mid} onChange={e=>setForm({...form,mid:+e.target.value})}>{M.map(m=><option key={m.id} value={m.id}>{m.prenom} {m.nom}</option>)}</select></div><div className="fg"><label className="fl">Statut</label><select className="fi" value={form.stat} onChange={e=>setForm({...form,stat:e.target.value})}><option>Actif</option><option>Diplômé</option><option>Suspendu</option></select></div></div>
+        <div className="fgd"><div className="fg"><label className="fl">Heures effectuées</label><input className="fi" type="number" value={form.h} onChange={e=>setForm({...form,h:+e.target.value})}/></div><div className="fg"><label className="fl">Solde (FCFA)</label><input className="fi" type="number" value={form.solde} onChange={e=>setForm({...form,solde:+e.target.value})}/></div></div>
+      </Modal>}
+    </div>
+  );
+};
+
+// MONITEURS
+const MN = ({M,setM,E}) => {
+  const [modal,setModal]=useState(false);
+  const [form,setForm]=useState({nom:"",prenom:"",email:"",tel:"",spe:"Permis B",stat:"Actif",note:4.5,sal:150000,exp:"1 an"});
+  const [sel,setSel]=useState(null);
+  const save=()=>{
+    if(sel)setM(M.map(m=>m.id===sel.id?{...m,...form}:m));
+    else setM([...M,{...form,id:Date.now()}]);
+    setModal(false);setSel(null);setForm({nom:"",prenom:"",email:"",tel:"",spe:"Permis B",stat:"Actif",note:4.5,sal:150000,exp:"1 an"});
+  };
+  return (
+    <div className="fa">
+      <div className="ph"><div><div className="ptl">Moniteurs 🎓</div><div className="pst">{M.length} moniteurs · {M.filter(m=>m.stat==="Actif").length} disponibles</div></div><button className="btn btnp" onClick={()=>setModal(true)}>+ Nouveau moniteur</button></div>
+      <div className="ga">
+        {M.map(m=>{
+          const ne=E.filter(e=>e.mid===m.id).length,c=gc(m.id);
+          return(
+            <div className="mc" key={m.id}>
+              <div className="mch">
+                <div className={`av avl a${c}`}>{init(m.nom,m.prenom)}</div>
+                <div className="mi"><div className="mn">{m.prenom} {m.nom}</div><div className="mr">{m.spe}</div><div className="str" style={{marginTop:4}}>{strs(m.note)} <span style={{fontSize:11,color:"var(--t3)"}}>{m.note}/5</span></div></div>
+                <div className="ml"><Bdg v={m.stat}/></div>
+              </div>
+              <div className="div2"/>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,fontSize:12}}>
+                <div style={{color:"var(--t3)"}}>📧</div><div style={{color:"var(--t2)",textAlign:"right"}}>{m.email}</div>
+                <div style={{color:"var(--t3)"}}>📱</div><div style={{color:"var(--t2)",textAlign:"right"}}>{m.tel}</div>
+                <div style={{color:"var(--t3)"}}>💼</div><div style={{color:"var(--t2)",textAlign:"right"}}>{m.exp}</div>
+                <div style={{color:"var(--t3)"}}>💰</div><div style={{color:"var(--p)",fontWeight:700,textAlign:"right"}}>{fmtF(m.sal)}</div>
+              </div>
+              <div className="ms">
+                <div style={{textAlign:"center"}}><div className="msv" style={{color:"var(--p)"}}>{ne}</div><div className="msl">Élèves</div></div>
+                <div style={{textAlign:"center"}}><div className="msv" style={{color:"var(--ok)"}}>{m.note}</div><div className="msl">Note</div></div>
+                <div style={{textAlign:"center"}}><div className="msv" style={{color:"var(--info)",fontSize:14}}>{m.exp}</div><div className="msl">Exp.</div></div>
+              </div>
+              <div className="div2"/>
+              <div style={{display:"flex",gap:7}}>
+                <button className="btn btng bsm" style={{flex:1}} onClick={()=>{setSel(m);setForm(m);setModal(true);}}>✏️ Modifier</button>
+                <button className="btn btnd bsm" onClick={()=>setM(M.filter(x=>x.id!==m.id))}>🗑️</button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {modal&&<Modal title={sel?"Modifier":"Nouveau moniteur"} onClose={()=>{setModal(false);setSel(null);}} footer={<><button className="btn btng" onClick={()=>setModal(false)}>Annuler</button><button className="btn btnp" onClick={save}>💾 Enregistrer</button></>}>
+        <div className="fgd"><div className="fg"><label className="fl">Prénom</label><input className="fi" value={form.prenom} onChange={e=>setForm({...form,prenom:e.target.value})} placeholder="Prénom"/></div><div className="fg"><label className="fl">Nom</label><input className="fi" value={form.nom} onChange={e=>setForm({...form,nom:e.target.value})} placeholder="Nom"/></div></div>
+        <div className="fg"><label className="fl">Email</label><input className="fi" value={form.email} onChange={e=>setForm({...form,email:e.target.value})} placeholder="email@autoecole.cm"/></div>
+        <div className="fgd"><div className="fg"><label className="fl">Téléphone</label><input className="fi" value={form.tel} onChange={e=>setForm({...form,tel:e.target.value})} placeholder="6XX XXX XXX"/></div><div className="fg"><label className="fl">Spécialité</label><select className="fi" value={form.spe} onChange={e=>setForm({...form,spe:e.target.value})}><option>Permis B</option><option>Permis A</option><option>Permis B/A</option></select></div></div>
+        <div className="fgd"><div className="fg"><label className="fl">Salaire (FCFA)</label><input className="fi" type="number" value={form.sal} onChange={e=>setForm({...form,sal:+e.target.value})}/></div><div className="fg"><label className="fl">Statut</label><select className="fi" value={form.stat} onChange={e=>setForm({...form,stat:e.target.value})}><option>Actif</option><option>Congé</option><option>Inactif</option></select></div></div>
+      </Modal>}
+    </div>
+  );
+};
+
+// PLANNING
+const PL = ({L,setL,E,M}) => {
+  const [modal,setModal]=useState(false);
+  const [filt,setFilt]=useState("Tous");
+  const [form,setForm]=useState({eid:1,mid:1,date:"",h:"08:00",dur:2,type:"Conduite",stat:"En attente",veh:""});
+  const filtered=L.filter(l=>filt==="Tous"||l.type===filt||l.stat===filt);
+  const colS={"Confirmée":"var(--ok)","En attente":"var(--warn)","Annulée":"var(--err)"};
+  const save=()=>{setL([...L,{...form,id:Date.now(),eid:+form.eid,mid:+form.mid,dur:+form.dur}]);setModal(false);};
+  return (
+    <div className="fa">
+      <div className="ph"><div><div className="ptl">Planning des Leçons 📅</div><div className="pst">{L.length} leçons programmées</div></div><button className="btn btnp" onClick={()=>setModal(true)}>+ Planifier une leçon</button></div>
+      <div className="sfb">{["Tous","Conduite","Code","Confirmée","En attente","Annulée"].map(f=><button key={f} className={`btn bsm ${filt===f?"btnp":"btng"}`} onClick={()=>setFilt(f)}>{f}</button>)}</div>
+      <div style={{display:"flex",flexDirection:"column",gap:10}}>
+        {filtered.map(l=>{
+          const e=E.find(x=>x.id===l.eid),m=M.find(x=>x.id===l.mid);
+          return(
+            <div key={l.id} className="card" style={{padding:0}}>
+              <div style={{display:"flex",alignItems:"center"}}>
+                <div style={{width:5,background:colS[l.stat]||"var(--bd)",alignSelf:"stretch",borderRadius:"15px 0 0 15px",flexShrink:0}}/>
+                <div style={{display:"flex",alignItems:"center",gap:14,padding:"14px 18px",flex:1,flexWrap:"wrap"}}>
+                  <div style={{textAlign:"center",minWidth:55}}>
+                    <div style={{fontFamily:"'Syne',sans-serif",fontSize:20,fontWeight:800,color:"var(--p)"}}>{l.h}</div>
+                    <div style={{fontSize:11,color:"var(--t3)"}}>{l.dur}h</div>
+                  </div>
+                  <div style={{width:1,height:38,background:"var(--bd)"}}/>
+                  <div style={{display:"flex",alignItems:"center",gap:9,flex:1}}>
+                    <div className={`av a${gc(l.eid)}`}>{init(e?.nom,e?.prenom)}</div>
+                    <div><div style={{fontWeight:700,color:"var(--t)"}}>{e?.prenom} {e?.nom}</div><div style={{fontSize:11,color:"var(--t3)"}}>{m?.prenom} {m?.nom}</div></div>
+                  </div>
+                  <div style={{display:"flex",gap:7,alignItems:"center",flexWrap:"wrap"}}>
+                    <span className={`bdg b${l.type==="Conduite"?"or":"in"}`}>{l.type}</span>
+                    <Bdg v={l.stat}/>
+                    <span style={{fontSize:12,color:"var(--t2)"}}>📅 {fmtD(l.date)}</span>
+                    <span style={{fontSize:12,color:"var(--t2)"}}>🚗 {l.veh}</span>
+                  </div>
+                  <div style={{display:"flex",gap:6,marginLeft:"auto"}}>
+                    <button className="btn btns bsm" onClick={()=>setL(L.map(x=>x.id===l.id?{...x,stat:"Confirmée"}:x))}>✓</button>
+                    <button className="btn btnd bsm" onClick={()=>setL(L.filter(x=>x.id!==l.id))}>🗑️</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+        {filtered.length===0&&<div style={{textAlign:"center",padding:"50px",color:"var(--t3)"}}>📅 Aucune leçon trouvée</div>}
+      </div>
+      {modal&&<Modal title="Planifier une leçon" onClose={()=>setModal(false)} footer={<><button className="btn btng" onClick={()=>setModal(false)}>Annuler</button><button className="btn btnp" onClick={save}>💾 Enregistrer</button></>}>
+        <div className="fgd"><div className="fg"><label className="fl">Élève</label><select className="fi" value={form.eid} onChange={e=>setForm({...form,eid:e.target.value})}>{E.map(e=><option key={e.id} value={e.id}>{e.prenom} {e.nom}</option>)}</select></div><div className="fg"><label className="fl">Moniteur</label><select className="fi" value={form.mid} onChange={e=>setForm({...form,mid:e.target.value})}>{M.map(m=><option key={m.id} value={m.id}>{m.prenom} {m.nom}</option>)}</select></div></div>
+        <div className="fgd"><div className="fg"><label className="fl">Date</label><input className="fi" type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})}/></div><div className="fg"><label className="fl">Heure</label><input className="fi" type="time" value={form.h} onChange={e=>setForm({...form,h:e.target.value})}/></div></div>
+        <div className="fgd"><div className="fg"><label className="fl">Type</label><select className="fi" value={form.type} onChange={e=>setForm({...form,type:e.target.value})}><option>Conduite</option><option>Code</option></select></div><div className="fg"><label className="fl">Durée</label><select className="fi" value={form.dur} onChange={e=>setForm({...form,dur:e.target.value})}><option value={1}>1h</option><option value={2}>2h</option><option value={3}>3h</option></select></div></div>
+        <div className="fg"><label className="fl">Véhicule / Salle</label><input className="fi" value={form.veh} onChange={e=>setForm({...form,veh:e.target.value})} placeholder="Ex: Toyota Corolla — LT 234 A"/></div>
+      </Modal>}
+    </div>
+  );
+};
+
+// EXAMENS
+const XM = ({X,setX,E}) => {
+  const [modal,setModal]=useState(false);
+  const [form,setForm]=useState({eid:1,type:"Code",date:"",sc:0,seuil:35,centre:"CENAC Douala"});
+  const tr=X.length?Math.round(X.filter(x=>x.stat==="Réussi").length/X.length*100):0;
+  const save=()=>{const s=+form.sc>=+form.seuil?"Réussi":"Échoué";setX([...X,{...form,id:Date.now(),eid:+form.eid,sc:+form.sc,seuil:+form.seuil,stat:s}]);setModal(false);};
+  return (
+    <div className="fa">
+      <div className="ph"><div><div className="ptl">Examens 🎯</div><div className="pst">Taux de réussite global : <strong style={{color:"var(--ok)"}}>{tr}%</strong></div></div><button className="btn btnp" onClick={()=>setModal(true)}>+ Enregistrer un examen</button></div>
+      <div className="g3" style={{marginBottom:22}}>
+        {[{l:"Total examens",v:X.length,c:"bl",i:"📋"},{l:"Réussis",v:X.filter(x=>x.stat==="Réussi").length,c:"gr",i:"✅"},{l:"Échoués",v:X.filter(x=>x.stat==="Échoué").length,c:"or",i:"❌"}].map((s,i)=>(
+          <div className={`sc ${s.c}`} key={i}><div className={`si ${s.c}`}>{s.i}</div><div className="sv">{s.v}</div><div className="sl">{s.l}</div></div>
+        ))}
+      </div>
+      <div className="card">
+        <table className="dt">
+          <thead><tr><th>Élève</th><th>Type</th><th>Date</th><th>Score</th><th>Seuil</th><th>Centre</th><th>Résultat</th><th></th></tr></thead>
+          <tbody>{X.map(x=>{const e=E.find(el=>el.id===x.eid);return(
+            <tr key={x.id}>
+              <td><div className="cn"><div className={`av a${gc(x.eid)}`}>{init(e?.nom,e?.prenom)}</div><span style={{fontWeight:600,color:"var(--t)"}}>{e?.prenom} {e?.nom}</span></div></td>
+              <td><span className={`bdg b${x.type==="Code"?"in":"or"}`}>{x.type}</span></td>
+              <td>{fmtD(x.date)}</td>
+              <td><strong style={{fontFamily:"'Syne',sans-serif",fontSize:16,color:x.sc>=x.seuil?"var(--ok)":"var(--err)"}}>{x.sc}</strong></td>
+              <td style={{color:"var(--t3)"}}>{x.seuil}</td>
+              <td>{x.centre}</td>
+              <td><Bdg v={x.stat}/></td>
+              <td><button className="btn btnd bsm" onClick={()=>setX(X.filter(y=>y.id!==x.id))}>🗑️</button></td>
+            </tr>
+          );})}
           </tbody>
         </table>
       </div>
-
-      {showModal && (
-        <Modal title="Enregistrer un paiement" onClose={() => setShowModal(false)}>
-          <InputField label="Élève" value={form.eleveId} onChange={v => setForm({...form, eleveId: Number(v)})}
-            options={eleves.map(e => ({ value: e.id, label: `${e.prenom} ${e.nom}` }))} />
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <InputField label="Montant (FCFA)" type="number" value={form.montant} onChange={v => setForm({...form, montant: v})} />
-            <InputField label="Type" value={form.type} onChange={v => setForm({...form, type: v})}
-              options={[{ value: "Inscription", label: "Inscription" }, { value: "Acompte", label: "Acompte" }, { value: "Paiement complet", label: "Paiement complet" }]} />
-          </div>
-          <InputField label="Mode de paiement" value={form.mode} onChange={v => setForm({...form, mode: v})}
-            options={[{ value: "Mobile Money", label: "📱 Mobile Money" }, { value: "Espèces", label: "💵 Espèces" }, { value: "Virement", label: "🏦 Virement bancaire" }]} />
-          <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
-            <button onClick={() => setShowModal(false)} style={{ flex: 1, padding: "12px", background: "#2a2a4a", border: "none", color: "#fff", borderRadius: 12, cursor: "pointer", fontWeight: 600 }}>Annuler</button>
-            <button onClick={save} style={{ flex: 1, padding: "12px", background: "linear-gradient(135deg, #38bdf8, #0ea5e9)", border: "none", color: "#fff", borderRadius: 12, cursor: "pointer", fontWeight: 700 }}>Enregistrer</button>
-          </div>
-        </Modal>
-      )}
+      {modal&&<Modal title="Enregistrer un examen" onClose={()=>setModal(false)} footer={<><button className="btn btng" onClick={()=>setModal(false)}>Annuler</button><button className="btn btnp" onClick={save}>💾 Enregistrer</button></>}>
+        <div className="fg"><label className="fl">Élève</label><select className="fi" value={form.eid} onChange={e=>setForm({...form,eid:e.target.value})}>{E.map(e=><option key={e.id} value={e.id}>{e.prenom} {e.nom}</option>)}</select></div>
+        <div className="fgd"><div className="fg"><label className="fl">Type</label><select className="fi" value={form.type} onChange={e=>setForm({...form,type:e.target.value,seuil:e.target.value==="Code"?35:70})}><option>Code</option><option>Conduite</option></select></div><div className="fg"><label className="fl">Date</label><input className="fi" type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})}/></div></div>
+        <div className="fgd"><div className="fg"><label className="fl">Score</label><input className="fi" type="number" value={form.sc} onChange={e=>setForm({...form,sc:e.target.value})} placeholder={`Sur ${form.type==="Code"?40:100}`}/></div><div className="fg"><label className="fl">Seuil</label><input className="fi" type="number" value={form.seuil} onChange={e=>setForm({...form,seuil:e.target.value})}/></div></div>
+        <div className="fg"><label className="fl">Centre</label><input className="fi" value={form.centre} onChange={e=>setForm({...form,centre:e.target.value})} placeholder="CENAC Douala"/></div>
+        {form.sc>0&&<div style={{padding:"11px 14px",borderRadius:9,background:+form.sc>=+form.seuil?"rgba(0,214,143,.1)":"rgba(255,64,96,.1)",border:`1px solid ${+form.sc>=+form.seuil?"rgba(0,214,143,.2)":"rgba(255,64,96,.2)"}`,fontSize:13,fontWeight:700,color:+form.sc>=+form.seuil?"var(--ok)":"var(--err)"}}>{+form.sc>=+form.seuil?"✅ RÉUSSI":"❌ ÉCHOUÉ"}</div>}
+      </Modal>}
     </div>
   );
 };
 
-// ============================================================
-// PAGE: NOTIFICATIONS
-// ============================================================
-const Notifications = ({ notifications, setNotifications, eleves }) => {
-  const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({ eleveId: eleves[0]?.id || 1, type: "SMS", sujet: "", message: "" });
-  const [sending, setSending] = useState(false);
+// PAIEMENTS
+const PA = ({P,setP,E}) => {
+  const [modal,setModal]=useState(false);
+  const [form,setForm]=useState({eid:1,mt:"",mode:"Mobile Money",stat:"Payé"});
+  const ca=P.filter(p=>p.stat==="Payé").reduce((s,p)=>s+p.mt,0);
+  const att=P.filter(p=>p.stat==="En attente").reduce((s,p)=>s+p.mt,0);
+  const icons={"Mobile Money":"📱","Espèces":"💵","Virement":"🏦","Carte":"💳"};
+  const save=()=>{const ref="PAY-"+(Math.floor(Math.random()*9000)+1000);setP([...P,{...form,id:Date.now(),eid:+form.eid,mt:+form.mt,date:new Date().toISOString().slice(0,10),ref}]);setModal(false);};
+  return (
+    <div className="fa">
+      <div className="ph"><div><div className="ptl">Facturation & Paiements 💰</div><div className="pst">{P.length} transactions</div></div><button className="btn btnp" onClick={()=>setModal(true)}>+ Enregistrer un paiement</button></div>
+      <div className="g3" style={{marginBottom:22}}>
+        <div className="sc gr"><div className="si gr">💰</div><div className="sv" style={{fontSize:20}}>{fmtF(ca)}</div><div className="sl">Chiffre d'affaires</div></div>
+        <div className="sc or"><div className="si or">⏳</div><div className="sv" style={{fontSize:20}}>{fmtF(att)}</div><div className="sl">En attente</div></div>
+        <div className="sc bl"><div className="si bl">📊</div><div className="sv">{P.length}</div><div className="sl">Transactions</div></div>
+      </div>
+      <div className="card">
+        <table className="dt">
+          <thead><tr><th>Référence</th><th>Élève</th><th>Montant</th><th>Mode</th><th>Date</th><th>Statut</th><th></th></tr></thead>
+          <tbody>{P.map(p=>{const e=E.find(x=>x.id===p.eid);return(
+            <tr key={p.id}>
+              <td style={{fontFamily:"monospace",color:"var(--p)",fontWeight:700}}>{p.ref}</td>
+              <td><div className="cn"><div className={`av a${gc(p.eid)}`}>{init(e?.nom,e?.prenom)}</div><span style={{fontWeight:600,color:"var(--t)"}}>{e?.prenom} {e?.nom}</span></div></td>
+              <td style={{fontFamily:"'Syne',sans-serif",fontSize:15,fontWeight:800,color:"var(--ok)"}}>{fmtF(p.mt)}</td>
+              <td>{icons[p.mode]||"💳"} {p.mode}</td>
+              <td>{fmtD(p.date)}</td>
+              <td><Bdg v={p.stat}/></td>
+              <td><button className="btn btnd bsm" onClick={()=>setP(P.filter(x=>x.id!==p.id))}>🗑️</button></td>
+            </tr>
+          );})}
+          </tbody>
+        </table>
+      </div>
+      {modal&&<Modal title="Enregistrer un paiement" onClose={()=>setModal(false)} footer={<><button className="btn btng" onClick={()=>setModal(false)}>Annuler</button><button className="btn btnp" onClick={save}>💾 Enregistrer</button></>}>
+        <div className="fg"><label className="fl">Élève</label><select className="fi" value={form.eid} onChange={e=>setForm({...form,eid:e.target.value})}>{E.map(e=><option key={e.id} value={e.id}>{e.prenom} {e.nom} — Solde: {fmtF(e.solde)}</option>)}</select></div>
+        <div className="fg"><label className="fl">Montant (FCFA)</label><input className="fi" type="number" value={form.mt} onChange={e=>setForm({...form,mt:e.target.value})} placeholder="Ex: 50000"/></div>
+        <div className="fg"><label className="fl">Mode de paiement</label>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,marginTop:4}}>
+            {["Mobile Money","Espèces","Virement","Carte"].map(m=><div key={m} className={`pm ${form.mode===m?"sel":""}`} onClick={()=>setForm({...form,mode:m})}><span style={{fontSize:22}}>{icons[m]}</span><span style={{fontSize:13,fontWeight:600}}>{m}</span></div>)}
+          </div>
+        </div>
+        <div className="fg"><label className="fl">Statut</label><select className="fi" value={form.stat} onChange={e=>setForm({...form,stat:e.target.value})}><option>Payé</option><option>En attente</option></select></div>
+      </Modal>}
+    </div>
+  );
+};
 
-  const send = () => {
-    setSending(true);
-    setTimeout(() => {
-      setNotifications(prev => [...prev, { ...form, id: Date.now(), date: new Date().toISOString().split("T")[0], statut: "Envoyé", eleveId: Number(form.eleveId) }]);
-      setSending(false);
-      setShowModal(false);
-    }, 1500);
+// NOTIFICATIONS
+const NO = ({E}) => {
+  const [form,setForm]=useState({to:"all",type:"sms",sujet:"",msg:""});
+  const [sent,setSent]=useState([
+    {id:1,to:"Joël Mbarga",type:"SMS",sujet:"Rappel leçon",msg:"Votre leçon est prévue demain à 08h00.",date:"2025-03-21"},
+    {id:2,to:"Sandra Eyenga",type:"Email",sujet:"Paiement en attente",msg:"Votre solde de 120 000 FCFA est dû.",date:"2025-03-20"},
+    {id:3,to:"Tous les élèves",type:"SMS",sujet:"Fermeture exceptionnelle",msg:"L'auto-école sera fermée ce samedi.",date:"2025-03-19"},
+  ]);
+  const tpls=[
+    {l:"📅 Rappel leçon",m:"Votre leçon de conduite est prévue le [DATE] à [HEURE]. N'oubliez pas votre pièce d'identité."},
+    {l:"🎓 Convocation examen",m:"Vous êtes convoqué(e) à l'examen [TYPE] le [DATE] au centre CENAC Douala. Bonne chance !"},
+    {l:"💰 Rappel paiement",m:"Votre solde impayé est de [MONTANT] FCFA. Merci de régulariser votre situation."},
+    {l:"🏆 Félicitations",m:"Félicitations ! Vous avez réussi votre examen. Votre permis sera disponible sous 15 jours."},
+  ];
+  const send=()=>{
+    const t=form.to==="all"?"Tous les élèves":E.find(e=>e.id===+form.to)?.prenom+" "+E.find(e=>e.id===+form.to)?.nom;
+    setSent([{id:Date.now(),to:t,type:form.type==="sms"?"SMS":"Email",sujet:form.sujet,msg:form.msg,date:new Date().toISOString().slice(0,10)},...sent]);
+    setForm({...form,sujet:"",msg:""});
+  };
+  return (
+    <div className="fa">
+      <div className="ph"><div><div className="ptl">Notifications 🔔</div><div className="pst">Envoyez des messages à vos élèves</div></div></div>
+      <div className="g2">
+        <div className="card">
+          <div className="ch"><div className="ctl">✍️ Composer un message</div></div>
+          <div className="cb">
+            <div className="fg"><label className="fl">Destinataire</label><select className="fi" value={form.to} onChange={e=>setForm({...form,to:e.target.value})}><option value="all">📢 Tous les élèves</option>{E.map(e=><option key={e.id} value={e.id}>{e.prenom} {e.nom}</option>)}</select></div>
+            <div className="fg"><label className="fl">Canal</label><div style={{display:"flex",gap:8}}>{[{v:"sms",l:"📱 SMS"},{v:"email",l:"📧 Email"}].map(c=><button key={c.v} className={`btn ${form.type===c.v?"btnp":"btng"}`} style={{flex:1}} onClick={()=>setForm({...form,type:c.v})}>{c.l}</button>)}</div></div>
+            <div className="fg"><label className="fl">Templates rapides</label><div style={{display:"flex",flexDirection:"column",gap:5}}>{tpls.map((t,i)=><button key={i} className="btn btng bsm" style={{justifyContent:"flex-start"}} onClick={()=>setForm({...form,sujet:t.l.replace(/^.{2}/,""),msg:t.m})}>{t.l}</button>)}</div></div>
+            <div className="fg"><label className="fl">Sujet</label><input className="fi" value={form.sujet} onChange={e=>setForm({...form,sujet:e.target.value})} placeholder="Objet du message"/></div>
+            <div className="fg"><label className="fl">Message</label><textarea className="fi" rows={4} value={form.msg} onChange={e=>setForm({...form,msg:e.target.value})} placeholder="Rédigez votre message..." style={{resize:"vertical"}}/></div>
+            <button className="btn btnp" style={{width:"100%"}} onClick={send} disabled={!form.msg||!form.sujet}>📤 Envoyer</button>
+          </div>
+        </div>
+        <div className="card">
+          <div className="ch"><div className="ctl">📬 Historique</div><span className="bdg bor">{sent.length}</span></div>
+          <div style={{padding:"0 20px"}}>
+            {sent.map(n=>(
+              <div className="ni2" key={n.id}>
+                <div className="tic" style={{background:n.type==="SMS"?"rgba(0,212,255,.11)":"rgba(255,77,0,.11)"}}>{n.type==="SMS"?"📱":"📧"}</div>
+                <div><div style={{fontSize:13,fontWeight:600,color:"var(--t)"}}>{n.sujet}</div><div style={{fontSize:12,color:"var(--t2)"}}>{n.to}</div><div style={{fontSize:11,color:"var(--t3)",fontStyle:"italic",marginTop:2}}>"{n.msg.slice(0,55)}..."</div><div style={{display:"flex",gap:7,marginTop:4}}><span style={{fontSize:11,color:"var(--t3)"}}>{fmtD(n.date)}</span><span className="bdg bok">Envoyé</span></div></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// VEHICULES
+const VH = () => {
+  const V=[
+    {id:1,marque:"Toyota",modele:"Corolla",immat:"LT 234 A",annee:2020,km:45230,stat:"Disponible",type:"Voiture",ico:"🚗",coul:"Blanc"},
+    {id:2,marque:"Renault",modele:"Logan",immat:"LT 890 C",annee:2019,km:62100,stat:"En service",type:"Voiture",ico:"🚗",coul:"Gris"},
+    {id:3,marque:"Honda",modele:"CB500",immat:"LT 567 B",annee:2021,km:18500,stat:"Disponible",type:"Moto",ico:"🏍️",coul:"Rouge"},
+    {id:4,marque:"Yamaha",modele:"MT-07",immat:"LT 321 D",annee:2022,km:9800,stat:"Maintenance",type:"Moto",ico:"🏍️",coul:"Bleu"},
+  ];
+  return (
+    <div className="fa">
+      <div className="ph"><div><div className="ptl">Parc Automobile 🚗</div><div className="pst">{V.length} véhicules</div></div><button className="btn btnp">+ Ajouter un véhicule</button></div>
+      <div className="ga">
+        {V.map(v=>(
+          <div className="vcard" key={v.id}>
+            <div className="vimg">{v.ico}</div>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:11}}>
+              <div><div style={{fontFamily:"'Syne',sans-serif",fontSize:16,fontWeight:700}}>{v.marque} {v.modele}</div><div style={{fontSize:12,color:"var(--t2)",marginTop:2}}>{v.immat} · {v.coul}</div></div>
+              <Bdg v={v.stat}/>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,fontSize:12}}>
+              <div style={{color:"var(--t3)"}}>📅 Année</div><div style={{color:"var(--t2)",textAlign:"right",fontWeight:600}}>{v.annee}</div>
+              <div style={{color:"var(--t3)"}}>🏎️ Kilométrage</div><div style={{color:"var(--t2)",textAlign:"right",fontWeight:600}}>{v.km.toLocaleString()} km</div>
+              <div style={{color:"var(--t3)"}}>🚦 Type</div><div style={{color:"var(--t2)",textAlign:"right",fontWeight:600}}>{v.type}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// APP
+export default function App() {
+  const [page,setPage]=useState("db");
+  const [E,setE]=useState(E0);
+  const [M,setM]=useState(M0);
+  const [L,setL]=useState(L0);
+  const [P,setP]=useState(P0);
+  const [X,setX]=useState(X0);
+
+  const nav=[
+    {id:"db",ico:"⊞",l:"Tableau de bord"},
+    {id:"el",ico:"👥",l:"Élèves",bg:E.filter(e=>e.stat==="Actif").length},
+    {id:"mn",ico:"🎓",l:"Moniteurs"},
+    {id:"pl",ico:"📅",l:"Planning",bg:L.filter(l=>l.stat==="En attente").length||undefined},
+    {id:"xm",ico:"🎯",l:"Examens"},
+    {id:"pa",ico:"💰",l:"Paiements",bg:P.filter(p=>p.stat==="En attente").length||undefined},
+    {id:"vh",ico:"🚗",l:"Véhicules"},
+    {id:"no",ico:"🔔",l:"Notifications"},
+  ];
+
+  const pages={
+    db:<DB E={E} M={M} L={L} P={P} X={X}/>,
+    el:<EL E={E} setE={setE} M={M}/>,
+    mn:<MN M={M} setM={setM} E={E}/>,
+    pl:<PL L={L} setL={setL} E={E} M={M}/>,
+    xm:<XM X={X} setX={setX} E={E}/>,
+    pa:<PA P={P} setP={setP} E={E}/>,
+    vh:<VH/>,
+    no:<NO E={E}/>,
   };
 
-  const templates = [
-    { label: "📅 Rappel leçon", sujet: "Rappel leçon", message: "Rappel: Vous avez une leçon planifiée demain. Veuillez vous présenter à l'heure." },
-    { label: "🏆 Convocation examen", sujet: "Convocation examen", message: "Vous êtes convoqué pour votre examen au CENAC Douala. Munissez-vous de votre convocation et d'une pièce d'identité." },
-    { label: "💰 Rappel paiement", sujet: "Rappel de paiement", message: "Vous avez un solde impayé. Veuillez régulariser votre situation auprès de notre secrétariat." },
-    { label: "✅ Félicitations", sujet: "Félicitations!", message: "Toutes nos félicitations pour votre succès à l'examen! Votre permis sera disponible sous 48h." },
-  ];
+  const cur=nav.find(n=>n.id===page);
 
   return (
-    <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-        <div>
-          <h2 style={{ fontSize: 26, fontWeight: 800, color: "#fff", margin: 0 }}>🔔 Notifications</h2>
-          <p style={{ color: "#888", margin: "4px 0 0", fontSize: 14 }}>Envoi Email & SMS aux élèves</p>
-        </div>
-        <button onClick={() => setShowModal(true)} style={{ background: "linear-gradient(135deg, #c084fc, #a855f7)", border: "none", color: "#fff", padding: "12px 24px", borderRadius: 12, cursor: "pointer", fontWeight: 700, fontSize: 14, boxShadow: "0 4px 20px #c084fc66" }}>
-          + Envoyer notification
-        </button>
-      </div>
-
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ color: "#888", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>Messages rapides</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
-          {templates.map((t, i) => (
-            <button key={i} onClick={() => { setForm(f => ({...f, sujet: t.sujet, message: t.message})); setShowModal(true); }}
-              style={{ background: "#1a1a2e", border: "1px solid #2a2a4a", borderRadius: 12, padding: "12px 16px", cursor: "pointer", color: "#ccc", fontSize: 13, textAlign: "left", transition: "border-color 0.2s" }}
-              onMouseEnter={e => e.currentTarget.style.borderColor = "#c084fc66"}
-              onMouseLeave={e => e.currentTarget.style.borderColor = "#2a2a4a"}>
-              {t.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div style={{ display: "grid", gap: 12 }}>
-        {notifications.map(n => {
-          const eleve = eleves.find(e => e.id === n.eleveId);
-          return (
-            <div key={n.id} style={{ background: "linear-gradient(135deg, #1a1a2e, #16213e)", border: "1px solid #2a2a4a", borderRadius: 14, padding: 20 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <Avatar initials={eleve?.photo || "?"} color="#c084fc" size={40} />
-                  <div>
-                    <div style={{ color: "#fff", fontWeight: 700, fontSize: 14 }}>{eleve?.prenom} {eleve?.nom}</div>
-                    <div style={{ color: "#888", fontSize: 12 }}>{n.type === "SMS" ? "📱" : "📧"} {n.type} • {n.date}</div>
-                  </div>
-                </div>
-                <Badge label={n.statut} />
-              </div>
-              <div style={{ color: "#c084fc", fontWeight: 600, fontSize: 14, marginBottom: 6 }}>{n.sujet}</div>
-              <div style={{ color: "#aaa", fontSize: 13, lineHeight: 1.6 }}>{n.message}</div>
-            </div>
-          );
-        })}
-      </div>
-
-      {showModal && (
-        <Modal title="Envoyer une notification" onClose={() => setShowModal(false)}>
-          <InputField label="Élève destinataire" value={form.eleveId} onChange={v => setForm({...form, eleveId: Number(v)})}
-            options={eleves.map(e => ({ value: e.id, label: `${e.prenom} ${e.nom}` }))} />
-          <InputField label="Canal" value={form.type} onChange={v => setForm({...form, type: v})}
-            options={[{ value: "SMS", label: "📱 SMS" }, { value: "Email", label: "📧 Email" }]} />
-          <InputField label="Sujet" value={form.sujet} onChange={v => setForm({...form, sujet: v})} placeholder="Ex: Rappel de leçon" />
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ display: "block", color: "#aaa", fontSize: 12, marginBottom: 6, fontWeight: 600, textTransform: "uppercase", letterSpacing: 1 }}>Message</label>
-            <textarea value={form.message} onChange={e => setForm({...form, message: e.target.value})} rows={4} placeholder="Rédigez votre message..."
-              style={{ width: "100%", padding: "10px 14px", background: "#1a1a2e", border: "1px solid #2a2a4a", borderRadius: 10, color: "#fff", fontSize: 14, outline: "none", resize: "vertical", boxSizing: "border-box" }} />
+    <>
+      <G/>
+      <div className="lay">
+        <nav className="side">
+          <div className="slogo">
+            <div className="lic">🚗</div>
+            <div><div className="lname">AutoGES Pro</div><div className="ltag">Auto-École Excellence</div></div>
           </div>
-          <div style={{ display: "flex", gap: 12 }}>
-            <button onClick={() => setShowModal(false)} style={{ flex: 1, padding: "12px", background: "#2a2a4a", border: "none", color: "#fff", borderRadius: 12, cursor: "pointer", fontWeight: 600 }}>Annuler</button>
-            <button onClick={send} disabled={sending} style={{ flex: 1, padding: "12px", background: "linear-gradient(135deg, #c084fc, #a855f7)", border: "none", color: "#fff", borderRadius: 12, cursor: "pointer", fontWeight: 700, opacity: sending ? 0.7 : 1 }}>
-              {sending ? "⏳ Envoi en cours..." : "📤 Envoyer"}
-            </button>
+          <div className="snav">
+            <div><div className="slbl">Principal</div>{nav.slice(0,2).map(n=><div key={n.id} className={`ni ${page===n.id?"on":""}`} onClick={()=>setPage(n.id)}><span className="ico">{n.ico}</span>{n.l}{n.bg?<span className="nbg">{n.bg}</span>:null}</div>)}</div>
+            <div style={{marginTop:8}}><div className="slbl">Gestion</div>{nav.slice(2,6).map(n=><div key={n.id} className={`ni ${page===n.id?"on":""}`} onClick={()=>setPage(n.id)}><span className="ico">{n.ico}</span>{n.l}{n.bg?<span className="nbg">{n.bg}</span>:null}</div>)}</div>
+            <div style={{marginTop:8}}><div className="slbl">Outils</div>{nav.slice(6).map(n=><div key={n.id} className={`ni ${page===n.id?"on":""}`} onClick={()=>setPage(n.id)}><span className="ico">{n.ico}</span>{n.l}</div>)}</div>
           </div>
-        </Modal>
-      )}
-    </div>
-  );
-};
-
-// ============================================================
-// APP PRINCIPALE
-// ============================================================
-export default function App() {
-  const [page, setPage] = useState("dashboard");
-  const [eleves, setEleves] = useState(initialEleves);
-  const [moniteurs, setMoniteurs] = useState(initialMoniteurs);
-  const [lecons, setLecons] = useState(initialLecons);
-  const [examens, setExamens] = useState(initialExamens);
-  const [paiements, setPaiements] = useState(initialPaiements);
-  const [notifications, setNotifications] = useState(initialNotifications);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-
-  const nav = [
-    { id: "dashboard", icon: "🏠", label: "Dashboard" },
-    { id: "eleves", icon: "👨‍🎓", label: "Élèves" },
-    { id: "moniteurs", icon: "👨‍🏫", label: "Moniteurs" },
-    { id: "planning", icon: "📅", label: "Planning" },
-    { id: "examens", icon: "🏆", label: "Examens" },
-    { id: "facturation", icon: "💰", label: "Facturation" },
-    { id: "notifications", icon: "🔔", label: "Notifications" },
-  ];
-
-  return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "#080812", fontFamily: "'Inter', 'Segoe UI', sans-serif", color: "#fff" }}>
-      {/* Sidebar */}
-      <div style={{ width: sidebarOpen ? 230 : 66, background: "linear-gradient(180deg, #0d0d1f 0%, #080812 100%)", borderRight: "1px solid #1a1a2e", display: "flex", flexDirection: "column", transition: "width 0.3s ease", flexShrink: 0, position: "sticky", top: 0, height: "100vh", overflowY: "auto", overflowX: "hidden" }}>
-        <div style={{ padding: sidebarOpen ? "24px 18px 20px" : "24px 10px 20px", borderBottom: "1px solid #1a1a2e", display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}
-          onClick={() => setSidebarOpen(!sidebarOpen)}>
-          <div style={{ width: 40, height: 40, borderRadius: 12, background: "linear-gradient(135deg, #FF6B35, #FF8C5A)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>🚗</div>
-          {sidebarOpen && (
-            <div>
-              <div style={{ color: "#fff", fontWeight: 800, fontSize: 15, lineHeight: 1.1 }}>AutoÉcole</div>
-              <div style={{ color: "#FF6B35", fontSize: 10, fontWeight: 700, letterSpacing: 2 }}>EXCELLENCE</div>
-            </div>
-          )}
-        </div>
-
-        <nav style={{ padding: "14px 8px", flex: 1 }}>
-          {nav.map(item => (
-            <button key={item.id} onClick={() => setPage(item.id)}
-              style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: sidebarOpen ? "11px 12px" : "11px", borderRadius: 11, border: "none", cursor: "pointer", marginBottom: 3, background: page === item.id ? "#FF6B3518" : "transparent", color: page === item.id ? "#FF6B35" : "#777", fontWeight: page === item.id ? 700 : 400, fontSize: 14, transition: "all 0.15s", borderLeft: page === item.id ? "3px solid #FF6B35" : "3px solid transparent", justifyContent: sidebarOpen ? "flex-start" : "center" }}>
-              <span style={{ fontSize: 17, flexShrink: 0 }}>{item.icon}</span>
-              {sidebarOpen && <span>{item.label}</span>}
-            </button>
-          ))}
+          <div className="sfoot">
+            <div className="ucard"><div className="uav">AD</div><div><div className="uname">Administrateur</div><div className="urole">Super Admin</div></div><span style={{marginLeft:"auto",fontSize:15,color:"var(--t3)"}}>⚙️</span></div>
+          </div>
         </nav>
-
-        <div style={{ padding: "14px 10px", borderTop: "1px solid #1a1a2e" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <Avatar initials="AD" color="#6C63FF" size={34} />
-            {sidebarOpen && (
-              <div>
-                <div style={{ color: "#fff", fontSize: 12, fontWeight: 600 }}>Administrateur</div>
-                <div style={{ color: "#888", fontSize: 10 }}>admin@excellence.cm</div>
-              </div>
-            )}
+        <div className="main">
+          <div className="top">
+            <div className="ttl">{cur?.l}</div>
+            <div className="tsrch"><span style={{color:"var(--t3)"}}>🔍</span><input placeholder="Recherche globale..."/></div>
+            <div className="tacts">
+              <div className="ibtn">🌙</div>
+              <div className="ibtn">🔔<div className="ndot"/></div>
+              <div className="ibtn">❓</div>
+              <div className="uav" style={{width:37,height:37,borderRadius:9,cursor:"pointer"}}>AD</div>
+            </div>
           </div>
+          <div className="pg">{pages[page]}</div>
         </div>
       </div>
-
-      {/* Main content */}
-      <div style={{ flex: 1, padding: "28px 32px", overflowY: "auto" }}>
-        {page === "dashboard" && <Dashboard eleves={eleves} moniteurs={moniteurs} lecons={lecons} examens={examens} paiements={paiements} />}
-        {page === "eleves" && <GestionEleves eleves={eleves} setEleves={setEleves} moniteurs={moniteurs} />}
-        {page === "moniteurs" && <GestionMoniteurs moniteurs={moniteurs} setMoniteurs={setMoniteurs} />}
-        {page === "planning" && <Planning lecons={lecons} setLecons={setLecons} eleves={eleves} moniteurs={moniteurs} />}
-        {page === "examens" && <GestionExamens examens={examens} setExamens={setExamens} eleves={eleves} />}
-        {page === "facturation" && <Facturation paiements={paiements} setPaiements={setPaiements} eleves={eleves} />}
-        {page === "notifications" && <Notifications notifications={notifications} setNotifications={setNotifications} eleves={eleves} />}
-      </div>
-    </div>
+    </>
   );
 }

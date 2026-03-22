@@ -23,19 +23,20 @@ const CSS = () => (
       /* Sidebar */
       --w-side: 220px;
 
-      /* Couleurs de base — dark slate, pas noir pur */
-      --bg-base:   #0C1018;
-      --bg-subtle: #111927;
-      --bg-muted:  #1C2333;
-      --bg-hover:  #212B3C;
+      /* Fond de page — très sombre */
+      --bg-base:   #080C12;
+      /* Sidebar — clairement différent du fond */
+      --bg-subtle: #0E1520;
+      --bg-muted:  #182030;
+      --bg-hover:  #1E2A3D;
 
-      /* Surfaces & cartes */
-      --surface:       #182030;
-      --surface-raised: #1E2840;
-      --surface-overlay: #243050;
+      /* Surfaces & cartes — plus claires que le fond */
+      --surface:        #131E2E;
+      --surface-raised: #192540;
+      --surface-overlay: #1E2D4A;
 
-      /* Bordures fines et discrètes */
-      --border:       rgba(255,255,255,0.09);
+      /* Bordures bien visibles */
+      --border:       rgba(255,255,255,0.10);
       --border-focus: rgba(241,130,66,0.5);
       --border-muted: rgba(255,255,255,0.04);
 
@@ -77,6 +78,11 @@ const CSS = () => (
       --shadow-xl: 0 16px 56px rgba(0,0,0,0.55);
     }
 
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow-x: hidden;
+    }
     html { font-size: 15px; }
 
     body {
@@ -97,8 +103,10 @@ const CSS = () => (
     .layout {
       display: block;
       min-height: 100vh;
-      width: 100%;
+      width: 100vw;
+      max-width: 100vw;
       position: relative;
+      overflow-x: hidden;
     }
 
     /* ── SIDEBAR ────────────────────────────────────────── */
@@ -114,7 +122,7 @@ const CSS = () => (
       z-index: 100;
       transition: transform .25s ease;
       overflow: hidden;
-      box-shadow: 2px 0 12px rgba(0,0,0,0.3);
+      box-shadow: 1px 0 0 var(--border), 4px 0 24px rgba(0,0,0,0.5);
     }
 
     .side-brand {
@@ -246,11 +254,11 @@ const CSS = () => (
 
     /* ── MAIN ────────────────────────────────────────────── */
     .main-content {
-      padding-left: var(--w-side);
+      margin-left: var(--w-side);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      width: 100%;
+      width: calc(100vw - var(--w-side));
       box-sizing: border-box;
     }
 
@@ -266,9 +274,7 @@ const CSS = () => (
       position: sticky;
       top: 0;
       z-index: 50;
-      width: 100%;
       flex-shrink: 0;
-      backdrop-filter: blur(8px);
     }
     .hamburger {
       display: none !important;
@@ -1009,18 +1015,27 @@ const CSS = () => (
 
     /* ── SIDEBAR ALWAYS VISIBLE DESKTOP ────────────────── */
     @media (min-width: 769px) {
-      .sidebar { transform: none !important; }
-      .main-content { padding-left: var(--w-side) !important; }
+      .sidebar {
+        transform: translateX(0) !important;
+        display: flex !important;
+        visibility: visible !important;
+      }
+      .main-content {
+        margin-left: var(--w-side) !important;
+        width: calc(100vw - var(--w-side)) !important;
+      }
     }
 
     /* ── RESPONSIVE ──────────────────────────────────────── */
     @media (max-width: 1400px) {
       :root { --w-side: 210px; }
+      .main-content { width: calc(100vw - 210px) !important; margin-left: 210px !important; }
       .page { padding: 24px 28px; }
       .stats-row { grid-template-columns: repeat(4, minmax(0,1fr)); }
     }
     @media (max-width: 1200px) {
       :root { --w-side: 195px; }
+      .main-content { width: calc(100vw - 195px) !important; margin-left: 195px !important; }
       .topbar-search { width: 180px; }
     }
     @media (max-width: 1024px) {
@@ -1031,9 +1046,13 @@ const CSS = () => (
       .sidebar {
         transform: translateX(-100%) !important;
         position: fixed !important;
+        z-index: 200 !important;
       }
       .sidebar.open { transform: translateX(0) !important; }
-      .main-content { padding-left: 0 !important; }
+      .main-content {
+        margin-left: 0 !important;
+        width: 100vw !important;
+      }
       .hamburger { display: flex !important; }
       .page { padding: 16px; }
       .topbar { padding: 0 16px; }

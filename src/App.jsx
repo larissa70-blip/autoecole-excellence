@@ -44,21 +44,26 @@ const CSS = () => (
     ::-webkit-scrollbar-thumb:hover{background:var(--p)}
 
     /* ── LAYOUT PRINCIPAL ─────────────────────────────────── */
-    .app{display:flex;min-height:100vh;width:100vw;overflow-x:hidden}
-    .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:99;backdrop-filter:blur(3px)}
-    .overlay.show{display:block}
+    .app{display:flex;min-height:100vh;width:100%}
+    .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:99;backdrop-filter:blur(3px);pointer-events:none}
+    .overlay.show{display:block;pointer-events:all}
 
     /* ── SIDEBAR ─────────────────────────────────────────── */
     .sidebar{
       width:var(--side);
+      min-width:var(--side);
+      max-width:var(--side);
       min-height:100vh;
       background:var(--bg2);
       border-right:1px solid var(--bd);
       display:flex;flex-direction:column;
-      position:fixed;top:0;left:0;
+      position:sticky;
+      top:0;
+      height:100vh;
       z-index:100;
       transition:transform .28s cubic-bezier(.4,0,.2,1);
       overflow-y:auto;
+      flex-shrink:0;
     }
 
     .s-logo{
@@ -145,12 +150,10 @@ const CSS = () => (
     /* ── MAIN ─────────────────────────────────────────────── */
     .main{
       flex:1;
-      margin-left:var(--side);
+      min-width:0;
       display:flex;flex-direction:column;
       min-height:100vh;
-      min-width:0;
-      width:calc(100% - var(--side));
-      overflow-x:hidden;
+      overflow:hidden;
     }
 
     /* ── TOPBAR ───────────────────────────────────────────── */
@@ -214,14 +217,13 @@ const CSS = () => (
       padding:24px 28px;
       flex:1;
       width:100%;
-      box-sizing:border-box;
+      overflow-x:hidden;
     }
     .ph{
       display:flex;align-items:flex-start;
       justify-content:space-between;
       margin-bottom:26px;
       flex-wrap:wrap;gap:14px;
-      width:100%;
     }
     .ptl{
       font-family:'Space Grotesk',sans-serif;
@@ -261,7 +263,6 @@ const CSS = () => (
       border:1px solid var(--bd);
       border-radius:var(--radius);
       overflow:hidden;
-      width:100%;
     }
     .ch{
       padding:18px 22px;
@@ -274,11 +275,9 @@ const CSS = () => (
     /* ── STAT GRID ────────────────────────────────────────── */
     .sg{
       display:grid;
-      grid-template-columns:repeat(4,minmax(0,1fr));
+      grid-template-columns:repeat(4,1fr);
       gap:var(--gap);
       margin-bottom:var(--gap);
-      width:100%;
-      box-sizing:border-box;
     }
     .sc{
       background:var(--card);border:1px solid var(--bd);
@@ -311,13 +310,13 @@ const CSS = () => (
     .str2.up{color:var(--ok)}.str2.dn{color:var(--er)}
 
     /* ── GRIDS ────────────────────────────────────────────── */
-    .g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--gap);width:100%}
-    .g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--gap);width:100%}
-    .ga{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:var(--gap);width:100%}
+    .g2{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap)}
+    .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--gap)}
+    .ga{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:var(--gap)}
 
     /* ── TABLE ────────────────────────────────────────────── */
-    .tw{overflow-x:auto;-webkit-overflow-scrolling:touch;width:100%}
-    .tbl{width:100%;border-collapse:collapse;font-size:13.5px;table-layout:fixed}
+    .tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+    .tbl{width:100%;border-collapse:collapse;font-size:13.5px}
     .tbl th{
       padding:12px 18px;text-align:left;
       font-size:11px;font-weight:700;
@@ -330,8 +329,6 @@ const CSS = () => (
       border-bottom:1px solid var(--bds);
       vertical-align:middle;
       white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
     }
     .tbl tr:last-child td{border-bottom:none}
     .tbl tr:hover td{background:var(--bg3);color:var(--t)}
@@ -414,7 +411,7 @@ const CSS = () => (
     .mb{padding:24px}.mf{padding:16px 24px;border-top:1px solid var(--bd);display:flex;gap:9px;justify-content:flex-end}
 
     /* ── FILTER BAR ───────────────────────────────────────── */
-    .fb{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;align-items:center;width:100%}
+    .fb{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;align-items:center}
     .sw{
       display:flex;align-items:center;gap:9px;
       background:var(--card);border:1px solid var(--bd);
@@ -581,26 +578,30 @@ const CSS = () => (
 
     /* Desktop standard 1024–1280px */
     @media(max-width:1280px){
-      :root{--side:215px}
+      :root{--side:200px}
       .pg{padding:22px 24px}
-      .t-srch{width:220px}
+      .t-srch{width:200px}
     }
 
     /* Tablette large 1024px */
     @media(max-width:1100px){
-      :root{--side:200px}
-      .sg{grid-template-columns:repeat(2,minmax(0,1fr))}
-      .g2{grid-template-columns:repeat(2,minmax(0,1fr))}
-      .t-srch{width:180px}
+      :root{--side:190px}
+      .sg{grid-template-columns:repeat(2,1fr)}
+      .g2{grid-template-columns:1fr 1fr}
+      .t-srch{display:none}
       .pg{padding:20px 22px}
     }
 
     /* Tablette portrait 768px */
     @media(max-width:768px){
-      :root{--side:260px}
-      .sidebar{transform:translateX(-100%)}
+      .sidebar{
+        position:fixed;top:0;left:0;
+        transform:translateX(-100%);
+        z-index:100;
+        height:100vh;
+      }
       .sidebar.open{transform:translateX(0)}
-      .main{margin-left:0}
+      .main{width:100%}
       .ham{display:flex}
       .sg{grid-template-columns:repeat(2,1fr);gap:14px}
       .g3{grid-template-columns:1fr 1fr}
@@ -1191,7 +1192,7 @@ function Planning({ data, refresh, toast }) {
         <input className="fi" type="date" value={dateFilt} onChange={e => setDateFilt(e.target.value)} style={{ width: 160, padding: "7px 12px" }} />
         {dateFilt && <button className="btn btn-g sm" onClick={() => setDateFilt("")}>✕ Effacer date</button>}
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {filtered.map(l => {
           const e = eleves.find(x => x.id === l.eleveId);
           const m = moniteurs.find(x => x.id === l.moniteurId);
@@ -1290,7 +1291,7 @@ function Examens({ data, refresh, toast }) {
         <div><div className="ptl">Examens</div><div className="pst">Taux de réussite : <strong style={{ color: "var(--ok)" }}>{tr}%</strong> sur {examens.length} examens</div></div>
         <button className="btn btn-p" onClick={() => { setForm(empty); setModal(true); }}>+ Enregistrer un examen</button>
       </div>
-      <div className="g3 mb12" style={{ width: "100%" }}>
+      <div className="g3 mb12">
         {[{ l: "Total examens", v: examens.length, c: "bl", i: "📋" },
           { l: "Réussis", v: examens.filter(x => x.statut === "Réussi").length, c: "gr", i: "✅" },
           { l: "Échoués", v: examens.filter(x => x.statut === "Échoué").length, c: "or", i: "❌" },
@@ -1395,7 +1396,7 @@ function Paiements({ data, refresh, toast }) {
         </div>
       </div>
 
-      <div className="g3 mb12" style={{ width: "100%" }}>
+      <div className="g3 mb12">
         <div className="sc gr"><div className="si gr">💰</div><div className="sv fn" style={{ fontSize: 20 }}>{fF(ca)}</div><div className="sl">Chiffre d'affaires</div></div>
         <div className="sc or"><div className="si or">⏳</div><div className="sv fn" style={{ fontSize: 20 }}>{fF(att)}</div><div className="sl">En attente</div></div>
         <div className="sc bl"><div className="si bl">📊</div><div className="sv fn">{paiements.length}</div><div className="sl">Transactions</div></div>

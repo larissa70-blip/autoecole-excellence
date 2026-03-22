@@ -23,7 +23,7 @@ const CSS = () => (
       --card:#172030;--card2:#1F2D40;
       --bd:rgba(255,255,255,.09);--bds:rgba(255,255,255,.04);--bda:rgba(232,71,10,.3);
       --t:#F0F6FF;--t2:#8FA8C8;--t3:#45607A;
-      --side:260px;
+      --side:210px;
       --topbar:64px;
       --radius:16px;
       --gap:20px;
@@ -44,7 +44,7 @@ const CSS = () => (
     ::-webkit-scrollbar-thumb:hover{background:var(--p)}
 
     /* ── LAYOUT PRINCIPAL ─────────────────────────────────── */
-    .app{display:flex;min-height:100vh;width:100%}
+    .app{display:flex;min-height:100vh;width:100vw;overflow-x:hidden}
     .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:99;backdrop-filter:blur(3px)}
     .overlay.show{display:block}
 
@@ -87,7 +87,7 @@ const CSS = () => (
       margin-top:2px;
     }
 
-    .s-nav{flex:1;padding:16px 12px;overflow-y:auto}
+    .s-nav{flex:1;padding:14px 10px;overflow-y:auto}
     .s-sec{margin-bottom:24px}
     .s-lbl{
       font-size:10px;font-weight:700;
@@ -149,6 +149,8 @@ const CSS = () => (
       display:flex;flex-direction:column;
       min-height:100vh;
       min-width:0;
+      width:calc(100% - var(--side));
+      overflow-x:hidden;
     }
 
     /* ── TOPBAR ───────────────────────────────────────────── */
@@ -160,6 +162,7 @@ const CSS = () => (
       padding:0 28px;gap:14px;
       position:sticky;top:0;z-index:50;
       flex-shrink:0;
+      width:100%;
     }
     .ham{
       display:none;
@@ -208,16 +211,17 @@ const CSS = () => (
 
     /* ── PAGE ─────────────────────────────────────────────── */
     .pg{
-      padding:28px 32px;
+      padding:24px 28px;
       flex:1;
-      max-width:100%;
-      overflow-x:hidden;
+      width:100%;
+      box-sizing:border-box;
     }
     .ph{
       display:flex;align-items:flex-start;
       justify-content:space-between;
       margin-bottom:26px;
       flex-wrap:wrap;gap:14px;
+      width:100%;
     }
     .ptl{
       font-family:'Space Grotesk',sans-serif;
@@ -257,6 +261,7 @@ const CSS = () => (
       border:1px solid var(--bd);
       border-radius:var(--radius);
       overflow:hidden;
+      width:100%;
     }
     .ch{
       padding:18px 22px;
@@ -269,9 +274,11 @@ const CSS = () => (
     /* ── STAT GRID ────────────────────────────────────────── */
     .sg{
       display:grid;
-      grid-template-columns:repeat(4,1fr);
+      grid-template-columns:repeat(4,minmax(0,1fr));
       gap:var(--gap);
       margin-bottom:var(--gap);
+      width:100%;
+      box-sizing:border-box;
     }
     .sc{
       background:var(--card);border:1px solid var(--bd);
@@ -304,13 +311,13 @@ const CSS = () => (
     .str2.up{color:var(--ok)}.str2.dn{color:var(--er)}
 
     /* ── GRIDS ────────────────────────────────────────────── */
-    .g2{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap)}
-    .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--gap)}
-    .ga{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:var(--gap)}
+    .g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--gap);width:100%}
+    .g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--gap);width:100%}
+    .ga{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:var(--gap);width:100%}
 
     /* ── TABLE ────────────────────────────────────────────── */
-    .tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
-    .tbl{width:100%;border-collapse:collapse;font-size:13.5px}
+    .tw{overflow-x:auto;-webkit-overflow-scrolling:touch;width:100%}
+    .tbl{width:100%;border-collapse:collapse;font-size:13.5px;table-layout:fixed}
     .tbl th{
       padding:12px 18px;text-align:left;
       font-size:11px;font-weight:700;
@@ -323,6 +330,8 @@ const CSS = () => (
       border-bottom:1px solid var(--bds);
       vertical-align:middle;
       white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
     }
     .tbl tr:last-child td{border-bottom:none}
     .tbl tr:hover td{background:var(--bg3);color:var(--t)}
@@ -405,7 +414,7 @@ const CSS = () => (
     .mb{padding:24px}.mf{padding:16px 24px;border-top:1px solid var(--bd);display:flex;gap:9px;justify-content:flex-end}
 
     /* ── FILTER BAR ───────────────────────────────────────── */
-    .fb{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;align-items:center}
+    .fb{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;align-items:center;width:100%}
     .sw{
       display:flex;align-items:center;gap:9px;
       background:var(--card);border:1px solid var(--bd);
@@ -564,24 +573,26 @@ const CSS = () => (
 
     /* Large desktop → 5 colonnes stats si très large */
     @media(min-width:1600px){
-      .sg{grid-template-columns:repeat(4,1fr);gap:24px}
-      .pg{padding:32px 40px}
-      .ga{grid-template-columns:repeat(auto-fill,minmax(320px,1fr))}
+      :root{--side:230px}
+      .sg{grid-template-columns:repeat(4,minmax(0,1fr));gap:24px}
+      .pg{padding:28px 36px}
+      .ga{grid-template-columns:repeat(auto-fill,minmax(340px,1fr))}
     }
 
     /* Desktop standard 1024–1280px */
     @media(max-width:1280px){
-      :root{--side:240px}
-      .pg{padding:24px 28px}
-      .t-srch{width:240px}
+      :root{--side:215px}
+      .pg{padding:22px 24px}
+      .t-srch{width:220px}
     }
 
     /* Tablette large 1024px */
     @media(max-width:1100px){
-      .sg{grid-template-columns:repeat(2,1fr)}
-      .g2{grid-template-columns:1fr}
-      .t-srch{display:none}
-      .pg{padding:22px 24px}
+      :root{--side:200px}
+      .sg{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .t-srch{width:180px}
+      .pg{padding:20px 22px}
     }
 
     /* Tablette portrait 768px */
@@ -1180,7 +1191,7 @@ function Planning({ data, refresh, toast }) {
         <input className="fi" type="date" value={dateFilt} onChange={e => setDateFilt(e.target.value)} style={{ width: 160, padding: "7px 12px" }} />
         {dateFilt && <button className="btn btn-g sm" onClick={() => setDateFilt("")}>✕ Effacer date</button>}
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%" }}>
         {filtered.map(l => {
           const e = eleves.find(x => x.id === l.eleveId);
           const m = moniteurs.find(x => x.id === l.moniteurId);
@@ -1279,7 +1290,7 @@ function Examens({ data, refresh, toast }) {
         <div><div className="ptl">Examens</div><div className="pst">Taux de réussite : <strong style={{ color: "var(--ok)" }}>{tr}%</strong> sur {examens.length} examens</div></div>
         <button className="btn btn-p" onClick={() => { setForm(empty); setModal(true); }}>+ Enregistrer un examen</button>
       </div>
-      <div className="g3 mb12">
+      <div className="g3 mb12" style={{ width: "100%" }}>
         {[{ l: "Total examens", v: examens.length, c: "bl", i: "📋" },
           { l: "Réussis", v: examens.filter(x => x.statut === "Réussi").length, c: "gr", i: "✅" },
           { l: "Échoués", v: examens.filter(x => x.statut === "Échoué").length, c: "or", i: "❌" },
@@ -1384,7 +1395,7 @@ function Paiements({ data, refresh, toast }) {
         </div>
       </div>
 
-      <div className="g3 mb12">
+      <div className="g3 mb12" style={{ width: "100%" }}>
         <div className="sc gr"><div className="si gr">💰</div><div className="sv fn" style={{ fontSize: 20 }}>{fF(ca)}</div><div className="sl">Chiffre d'affaires</div></div>
         <div className="sc or"><div className="si or">⏳</div><div className="sv fn" style={{ fontSize: 20 }}>{fF(att)}</div><div className="sl">En attente</div></div>
         <div className="sc bl"><div className="si bl">📊</div><div className="sv fn">{paiements.length}</div><div className="sl">Transactions</div></div>
@@ -1660,7 +1671,7 @@ function BasesDonnees({ toast }) {
       </div>
 
       {/* Résumé */}
-      <div className="g3 mb12" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(160px,1fr))" }}>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))", gap:"var(--gap,16px)", marginBottom:16, width:"100%" }}>
         {tables.map(t => (
           <div key={t} className={`sc bl`} style={{ padding: 14, cursor: "pointer", border: table === t ? "1px solid var(--p)" : "1px solid var(--bd)" }} onClick={() => setTable(t)}>
             <div style={{ fontSize: 22, marginBottom: 8 }}>{tableIcons[t]}</div>

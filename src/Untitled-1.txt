@@ -1,0 +1,12 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title> Mon premier programme </title>
+</head>
+<body>
+ilestsurleserveur
+<?php echo("joska est gentil");?>
+<?php
+</body>
+</html>

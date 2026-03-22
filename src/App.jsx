@@ -24,8 +24,8 @@ const CSS = () => (
       --w-side: 220px;
 
       /* Couleurs de base — dark slate, pas noir pur */
-      --bg-base:   #0F1117;
-      --bg-subtle: #161B25;
+      --bg-base:   #0C1018;
+      --bg-subtle: #111927;
       --bg-muted:  #1C2333;
       --bg-hover:  #212B3C;
 
@@ -35,7 +35,7 @@ const CSS = () => (
       --surface-overlay: #243050;
 
       /* Bordures fines et discrètes */
-      --border:       rgba(255,255,255,0.07);
+      --border:       rgba(255,255,255,0.09);
       --border-focus: rgba(241,130,66,0.5);
       --border-muted: rgba(255,255,255,0.04);
 
@@ -114,6 +114,7 @@ const CSS = () => (
       z-index: 100;
       transition: transform .25s ease;
       overflow: hidden;
+      box-shadow: 2px 0 12px rgba(0,0,0,0.3);
     }
 
     .side-brand {
@@ -267,9 +268,10 @@ const CSS = () => (
       z-index: 50;
       width: 100%;
       flex-shrink: 0;
+      backdrop-filter: blur(8px);
     }
     .hamburger {
-      display: none;
+      display: none !important;
       width: 32px; height: 32px;
       border-radius: var(--r-sm);
       border: 1px solid var(--border);
@@ -355,6 +357,7 @@ const CSS = () => (
       padding: 28px 32px;
       flex: 1;
       width: 100%;
+      min-width: 0;
       box-sizing: border-box;
       animation: pageIn .2s ease;
     }
@@ -371,6 +374,7 @@ const CSS = () => (
       margin-bottom: 28px;
       flex-wrap: wrap;
       gap: 12px;
+      width: 100%;
     }
     .page-title {
       font-size: 22px;
@@ -450,6 +454,7 @@ const CSS = () => (
       border: 1px solid var(--border);
       border-radius: var(--r-lg);
       overflow: hidden;
+      width: 100%;
     }
     .card-header {
       padding: 14px 18px;
@@ -469,9 +474,10 @@ const CSS = () => (
     /* ── STAT CARDS ──────────────────────────────────────── */
     .stats-row {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 14px;
       margin-bottom: 24px;
+      width: 100%;
     }
     .stat-card {
       background: var(--surface);
@@ -541,9 +547,9 @@ const CSS = () => (
     .si-purple { background: var(--purple-dim); }
 
     /* ── GRIDS ───────────────────────────────────────────── */
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-    .grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; }
-    .grid-auto { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px,1fr)); gap: 14px; }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; width: 100%; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 14px; width: 100%; }
+    .grid-auto { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 14px; width: 100%; }
 
     /* ── TABLE ───────────────────────────────────────────── */
     .table-wrap { overflow-x: auto; }
@@ -1001,26 +1007,34 @@ const CSS = () => (
     .empty-state .empty-text { font-size: 14px; font-weight: 500; color: var(--text-secondary); }
     .empty-state .empty-sub  { font-size: 12.5px; color: var(--text-muted); margin-top: 4px; }
 
+    /* ── SIDEBAR ALWAYS VISIBLE DESKTOP ────────────────── */
+    @media (min-width: 769px) {
+      .sidebar { transform: none !important; }
+      .main-content { padding-left: var(--w-side) !important; }
+    }
+
     /* ── RESPONSIVE ──────────────────────────────────────── */
     @media (max-width: 1400px) {
       :root { --w-side: 210px; }
       .page { padding: 24px 28px; }
+      .stats-row { grid-template-columns: repeat(4, minmax(0,1fr)); }
     }
     @media (max-width: 1200px) {
-      :root { --w-side: 200px; }
-      .topbar-search { width: 200px; }
-      .stats-row { grid-template-columns: repeat(2,1fr); }
+      :root { --w-side: 195px; }
+      .topbar-search { width: 180px; }
     }
     @media (max-width: 1024px) {
       .topbar-search { display: none; }
-      .grid-2 { grid-template-columns: 1fr; }
-      .stats-row { grid-template-columns: repeat(2,1fr); }
+      .stats-row { grid-template-columns: repeat(2, minmax(0,1fr)); }
     }
     @media (max-width: 768px) {
-      .sidebar { transform: translateX(-100%); position: fixed; }
-      .sidebar.open { transform: translateX(0); }
-      .main-content { padding-left: 0; }
-      .hamburger { display: flex; }
+      .sidebar {
+        transform: translateX(-100%) !important;
+        position: fixed !important;
+      }
+      .sidebar.open { transform: translateX(0) !important; }
+      .main-content { padding-left: 0 !important; }
+      .hamburger { display: flex !important; }
       .page { padding: 16px; }
       .topbar { padding: 0 16px; }
       .stats-row { grid-template-columns: 1fr 1fr; gap: 10px; }

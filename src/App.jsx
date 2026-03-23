@@ -307,22 +307,27 @@ const CSS = () => (
     .grid-auto { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px,1fr)); gap: 14px; width: 100%; }
 
     /* ── TABLE ──────────────────────────────────────────────────── */
-    .t-wrap { overflow-x: auto; width: 100%; }
+    .t-wrap { overflow-x: auto; width: 100%; display: block; }
     .t {
       width: 100%; border-collapse: collapse;
       font-size: 13px; white-space: nowrap;
+      min-width: 700px;
     }
     .t th {
-      padding: 10px 14px; text-align: left;
+      padding: 10px 16px; text-align: left;
       font-size: 10.5px; font-weight: 600; color: var(--t3);
       text-transform: uppercase; letter-spacing: .07em;
       border-bottom: 1px solid var(--border);
       background: var(--bg-card);
+      position: sticky; top: 0;
     }
     .t td {
-      padding: 12px 14px; color: var(--t2);
+      padding: 13px 16px; color: var(--t2);
       border-bottom: 1px solid rgba(255,255,255,.04);
       vertical-align: middle;
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .t tr:last-child td { border-bottom: none; }
     .t tbody tr:hover td { background: var(--bg-hover); color: var(--t1); }
@@ -633,7 +638,7 @@ function Tag({ v }) {
 
 function Av({ nom, prenom, id, lg }) {
   const c = avColor(id || 1);
-  return <div className={`av${lg?" av-lg":""} av-${c}`}>{initials(nom,prenom)}</div>;
+  return <div className={`av${lg?" av-lg":""} av-${c}`} translate="no">{initials(nom,prenom)}</div>;
 }
 
 function Modal({ title, onClose, footer, children, wide }) {
@@ -699,8 +704,8 @@ function Dashboard({ data, setPage, toast }) {
           <div className="page-sub">Auto-École Excellence · {new Date().toLocaleDateString("fr-FR", { weekday:"long", day:"numeric", month:"long", year:"numeric" })}</div>
         </div>
         <div className="page-actions">
-          <button className="btn btn-ghost btn-sm" onClick={() => { downloadFile(exportSQL(), "autoges.sql"); toast("Export SQL téléchargé","info"); }}>Exporter SQL</button>
-          <button className="btn btn-ghost btn-sm" onClick={() => { downloadFile(exportJSON(), "backup.json","application/json"); toast("Backup JSON téléchargé","info"); }}>Backup</button>
+          <button className="btn btn-ghost btn-sm" onClick={() => { downloadFile(exportSQL(), "autoges.sql"); toast("Export SQL téléchargé","info"); }} translate="no">↓ SQL</button>
+          <button className="btn btn-ghost btn-sm" onClick={() => { downloadFile(exportJSON(), "backup.json","application/json"); toast("Backup JSON téléchargé","info"); }} translate="no">↓ Backup</button>
           <button className="btn btn-primary" onClick={() => setPage("el")}>+ Nouvel élève</button>
         </div>
       </div>
@@ -883,7 +888,7 @@ function Eleves({ data, refresh, toast }) {
           <div className="page-sub">{eleves.length} inscrits · {eleves.filter(e=>e.statut==="Actif").length} actifs · {eleves.filter(e=>e.statut==="Diplômé").length} diplômés</div>
         </div>
         <div className="page-actions">
-          <button className="btn btn-ghost btn-sm" onClick={() => { downloadFile(exportCSV("eleves"),"eleves.csv","text/csv"); toast("Export CSV téléchargé","info"); }}>Exporter</button>
+          <button className="btn btn-ghost btn-sm" translate="no" onClick={() => { downloadFile(exportCSV("eleves"),"eleves.csv","text/csv"); toast("Export CSV téléchargé","info"); }}>↓ CSV</button>
           <button className="btn btn-primary" onClick={() => openForm()}>+ Inscrire un élève</button>
         </div>
       </div>
@@ -905,14 +910,14 @@ function Eleves({ data, refresh, toast }) {
           <table className="t">
             <thead>
               <tr>
-                <th>Élève</th>
-                <th>Téléphone</th>
-                <th>Permis</th>
-                <th>Progression</th>
-                <th>Solde dû</th>
-                <th>Moniteur</th>
-                <th>Statut</th>
-                <th style={{width:90}}></th>
+                <th style={{minWidth:180}}>Élève</th>
+                <th style={{width:120}}>Téléphone</th>
+                <th style={{width:90}}>Permis</th>
+                <th style={{minWidth:170}}>Progression</th>
+                <th style={{width:140}}>Solde dû</th>
+                <th style={{width:140}}>Moniteur</th>
+                <th style={{width:90}}>Statut</th>
+                <th style={{width:80}}></th>
               </tr>
             </thead>
             <tbody>
@@ -926,13 +931,13 @@ function Eleves({ data, refresh, toast }) {
                         <Av nom={e.nom} prenom={e.prenom} id={e.id}/>
                         <div style={{minWidth:0}}>
                           <div className="fw-600 text-primary" style={{fontSize:13.5, whiteSpace:"nowrap"}}>{e.prenom} {e.nom}</div>
-                          <div className="t-sm" style={{overflow:"hidden", textOverflow:"ellipsis", maxWidth:160}}>{e.email}</div>
+                          <div style={{fontSize:12, color:"var(--t3)", overflow:"hidden", textOverflow:"ellipsis", maxWidth:150, whiteSpace:"nowrap"}}>{e.email}</div>
                         </div>
                       </div>
                     </td>
                     <td style={{fontFamily:"'Geist Mono',monospace", fontSize:12.5}}>{e.telephone}</td>
-                    <td><span className={`badge badge-${e.permis==="B"?"orange":"blue"}`}>Permis {e.permis}</span></td>
-                    <td style={{minWidth:160}}>
+                    <td><span className={`tag tag-${e.permis==="B"?"orange":"blue"}`}>Permis {e.permis}</span></td>
+                    <td>
                       <div style={{display:"flex", alignItems:"center", gap:10}}>
                         <div className="bar" style={{flex:1, minWidth:80}}>
                           <div className="bar-fill bf-or" style={{width:`${pct}%`}}/>
@@ -941,20 +946,20 @@ function Eleves({ data, refresh, toast }) {
                       </div>
                     </td>
                     <td style={{fontFamily:"'Geist Mono',monospace", fontSize:13, fontWeight:600, color: e.solde>0?"var(--red)":"var(--green)", whiteSpace:"nowrap"}}>{e.solde>0 ? formatFCFA(e.solde) : "—"}</td>
-                    <td style={{minWidth:130}}>
+                    <td>
                       {mon ? (
                         <div style={{display:"flex", alignItems:"center", gap:8}}>
                           <Av nom={mon.nom} prenom={mon.prenom} id={mon.id}/>
-                          <span style={{fontSize:12.5, whiteSpace:"nowrap"}}>{mon.prenom} {mon.nom}</span>
+                          <span style={{fontSize:12.5, whiteSpace:"nowrap"}}>{mon.prenom} {mon.nom[0]}.</span>
                         </div>
                       ) : <span style={{color:"var(--t3)"}}>—</span>}
                     </td>
                     <td><Tag v={e.statut}/></td>
                     <td>
                       <div style={{display:"flex", gap:4}}>
-                        <button className="btn btn-ghost btn-sm" onClick={() => setDetail(e)} title="Voir détails">↗</button>
-                        <button className="btn btn-ghost btn-sm" onClick={() => openForm(e)} title="Modifier">✎</button>
-                        <button className="btn btn-danger btn-sm" onClick={() => del(e.id)} title="Supprimer">✕</button>
+                        <button className="btn btn-ghost btn-sm" onClick={() => setDetail(e)} title="Voir détails" translate="no">↗</button>
+                        <button className="btn btn-ghost btn-sm" onClick={() => openForm(e)} title="Modifier" translate="no">✎</button>
+                        <button className="btn btn-danger btn-sm" onClick={() => del(e.id)} title="Supprimer" translate="no">✕</button>
                       </div>
                     </td>
                   </tr>
@@ -1413,7 +1418,7 @@ function Paiements({ data, refresh, toast }) {
       <div className="card">
         <div className="t-wrap">
           <table className="t">
-            <thead><tr><th>Référence</th><th>Élève</th><th>Montant</th><th>Mode</th><th>Description</th><th>Date</th><th>Statut</th><th></th></tr></thead>
+            <thead><tr><th style={{width:100}}>Référence</th><th style={{minWidth:160}}>Élève</th><th style={{width:140}}>Montant</th><th style={{width:130}}>Mode</th><th>Description</th><th style={{width:130}}>Date</th><th style={{width:90}}>Statut</th><th style={{width:130}}>Actions</th></tr></thead>
             <tbody>
               {filtered.map(p => {
                 const e = eleves.find(x=>x.id===p.eleveId);
@@ -1752,8 +1757,8 @@ function BaseDeDonnees({ toast }) {
           <div className="page-sub">Visualisez, exportez et gérez toutes les données du système</div>
         </div>
         <div className="page-actions">
-          <button className="btn btn-ghost btn-sm" onClick={() => { downloadFile(exportSQL(),`autoges_${todayStr()}.sql`); toast("Export SQL téléchargé","info"); }}>Export SQL</button>
-          <button className="btn btn-ghost btn-sm" onClick={() => { downloadFile(exportJSON(),"backup.json","application/json"); toast("Backup JSON","info"); }}>Backup JSON</button>
+          <button className="btn btn-ghost btn-sm" onClick={() => { downloadFile(exportSQL(),`autoges_${todayStr()}.sql`); toast("Export SQL téléchargé","info"); }} translate="no">↓ SQL</button>
+          <button className="btn btn-ghost btn-sm" onClick={() => { downloadFile(exportJSON(),"backup.json","application/json"); toast("Backup JSON","info"); }} translate="no">↓ JSON</button>
           <button className="btn btn-ghost btn-sm" onClick={() => { downloadFile(exportCSV(table),`${table}.csv`,"text/csv"); toast(`${table}.csv exporté`,"info"); }}>Export CSV</button>
           <button className="btn btn-danger btn-sm" onClick={() => { if(window.confirm("Réinitialiser la base de données ?")) { resetDB(); window.location.reload(); } }}>Réinitialiser</button>
         </div>
@@ -1840,9 +1845,9 @@ function Parametres({ toast }) {
           <p className="t-sm" style={{marginBottom:14, lineHeight:1.6}}>Exportez vos données dans différents formats. Le format SQL est compatible MySQL/phpMyAdmin pour une migration en production.</p>
           <div className="row gap-8" style={{flexWrap:"wrap"}}>
             <button className="btn btn-ghost btn-sm" onClick={() => { downloadFile(exportSQL(),`autoges_${todayStr()}.sql`); toast("Export SQL téléchargé","info"); }}>Exporter en SQL</button>
-            <button className="btn btn-ghost btn-sm" onClick={() => { downloadFile(exportJSON(),"backup.json","application/json"); toast("Backup JSON téléchargé","info"); }}>Backup JSON</button>
-            <button className="btn btn-ghost btn-sm" onClick={() => { downloadFile(exportCSV("eleves"),"eleves.csv","text/csv"); toast("Élèves CSV","info"); }}>Élèves CSV</button>
-            <button className="btn btn-ghost btn-sm" onClick={() => { downloadFile(exportCSV("paiements"),"paiements.csv","text/csv"); toast("Paiements CSV","info"); }}>Paiements CSV</button>
+            <button className="btn btn-ghost btn-sm" onClick={() => { downloadFile(exportJSON(),"backup.json","application/json"); toast("Backup JSON téléchargé","info"); }} translate="no">↓ JSON</button>
+            <button className="btn btn-ghost btn-sm" onClick={() => { downloadFile(exportCSV("eleves"),"eleves.csv","text/csv"); toast("Élèves CSV","info"); }} translate="no">↓ Élèves</button>
+            <button className="btn btn-ghost btn-sm" onClick={() => { downloadFile(exportCSV("paiements"),"paiements.csv","text/csv"); toast("Paiements CSV","info"); }} translate="no">↓ Paiements</button>
           </div>
         </div>
       </div>
